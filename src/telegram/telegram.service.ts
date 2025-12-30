@@ -3,12 +3,11 @@ import TelegramBot, { KeyboardButton } from 'node-telegram-bot-api';
 import { UserService } from 'src/user/user.service';
 import * as cron from 'node-cron';
 
-type UserState = 'IDLE' | 'ADDING_TASK';
+type UserState = "IDLE" | "AddingTask" | "DeletingTask";
 
 @Injectable()
 export class TelegramService implements OnModuleInit {
     private bot: TelegramBot;
-    private taskNameMap = new Map<string, boolean>(); // chatId -> در حالت وارد کردن اسم تسک
     private userState = new Map<number, UserState>();
 
     constructor(private readonly userService: UserService) { }
@@ -86,15 +85,17 @@ export class TelegramService implements OnModuleInit {
 
         if (activeTask) {
             keyboard = [
-                [{ text: 'پایان تسک' }],
+                [{ text: '🔚 پایان تسک' }],
                 [{ text: '📊 گزارش امروز' }],
                 [{ text: '📋 لیست تسک‌ها' }],
+                [{ text: '🗑 حذف تسک' }],
             ];
         } else {
             keyboard = [
-                [{ text: 'افزودن تسک' }],
+                [{ text: '➕ افزودن تسک' }],
                 [{ text: '📊 گزارش امروز' }],
                 [{ text: '📋 لیست تسک‌ها' }],
+                [{ text: '🗑 حذف تسک' }],
             ];
         }
 
@@ -110,8 +111,7 @@ export class TelegramService implements OnModuleInit {
         this.bot.onText(/\/start/, async (msg) => {
             const chatId = msg.chat.id;
             const telegramId = msg.from.id.toString();
-            const username =
-                msg.from.username || msg.from.first_name || 'Unknown';
+            const username = msg.from.first_name || msg.from.username || 'Unknown';
 
             const user = await this.userService.getOrCreate(
                 telegramId,
@@ -124,6 +124,39 @@ export class TelegramService implements OnModuleInit {
         });
     }
 
+    // private handleAddTask() {
+    //     this.bot.onText(/افزودن تسک/, async (msg) => {
+    //         const chatId = msg.chat.id;
+    //         const telegramId = msg.from.id.toString();
+    //         const user = await this.userService.findByTelegramId(telegramId);
+    //         if (!user) return;
+
+    //         if (this.isOutsideWorkingHours()) {
+    //             await this.bot.sendMessage(
+    //                 chatId,
+    //                 '⏰ خارج از ساعات مجاز کاری هست.\nامکان شروع تسک فقط بین ۸ صبح تا ۱۰ شب وجود دارد.'
+    //             );
+    //             return;
+    //         }
+
+    //         const activeTask = await this.userService.getActiveTask(user.id);
+    //         if (activeTask) {
+    //             await this.sendMenu(chatId, user.id, 'یک تسک فعال داری');
+    //             return;
+    //         }
+
+    //         // ✅ اصلاح این خط
+    //         this.userState.set(chatId, 'AddingTask');
+
+    //         await this.bot.sendMessage(chatId, 'اسم تسک رو وارد کن 👇', {
+    //             reply_markup: {
+    //                 keyboard: [[{ text: '🔙 برگشت' }]],
+    //                 resize_keyboard: true,
+    //             },
+    //         });
+    //     });
+    // }
+
     private handleAddTask() {
         this.bot.onText(/افزودن تسک/, async (msg) => {
             const chatId = msg.chat.id;
@@ -131,17 +164,26 @@ export class TelegramService implements OnModuleInit {
             const user = await this.userService.findByTelegramId(telegramId);
             if (!user) return;
 
+            // محدودیت ساعت
+            if (this.isOutsideWorkingHours()) {
+                await this.bot.sendMessage(
+                    chatId,
+                    '⏰ خارج از ساعات مجاز کاری هست.\nامکان شروع تسک فقط بین ۸ صبح تا ۱۰ شب وجود دارد.'
+                );
+                return;
+            }
+
             const activeTask = await this.userService.getActiveTask(user.id);
             if (activeTask) {
                 await this.sendMenu(chatId, user.id, 'یک تسک فعال داری');
                 return;
             }
 
-            this.userState.set(chatId, 'ADDING_TASK');
+            this.userState.set(chatId, 'AddingTask');
 
             await this.bot.sendMessage(chatId, 'اسم تسک رو وارد کن 👇', {
                 reply_markup: {
-                    keyboard: [[{ text: 'برگشت' }]],
+                    keyboard: [[{ text: '🔙 برگشت' }]],
                     resize_keyboard: true,
                 },
             });
@@ -161,9 +203,9 @@ export class TelegramService implements OnModuleInit {
             const state = this.userState.get(chatId);
 
             // =========================
-            // دکمه برگشت
+            // دکمه 🔙 برگشت
             // =========================
-            if (text === 'برگشت') {
+            if (text === '🔙 برگشت') {
                 this.userState.set(chatId, 'IDLE');
                 await this.sendMenu(chatId, user.id);
                 return;
@@ -185,10 +227,25 @@ export class TelegramService implements OnModuleInit {
                 return;
             }
 
+            if (text === '🗑 حذف تسک') {
+                const activeTask = await this.userService.getActiveTask(user.id);
+                if (activeTask) {
+                    await this.bot.sendMessage(
+                        chatId,
+                        `تسک «${activeTask.name}» در حال اجراست ⏳\nاول اون رو پایان بده، بعد حذف کن.`,
+                    );
+                    return;
+                }
+
+                this.userState.set(chatId, 'DeletingTask');
+                await this.sendTaskDeleteList(chatId, user.id);
+                return;
+            }
+
             // =========================
             // افزودن تسک (وارد کردن اسم)
             // =========================
-            if (state === 'ADDING_TASK') {
+            if (state === 'AddingTask') {
                 const activeTask = await this.userService.getActiveTask(user.id);
                 if (activeTask) {
                     await this.sendMenu(
@@ -224,26 +281,45 @@ export class TelegramService implements OnModuleInit {
 
                     await this.bot.sendMessage(
                         chatId,
-                        `تسک «${activeTask.name}» از ساعت ${startTimeStr} در جریان است ⏳\nاول آن را پایان بده، بعد تسک جدید را شروع کن.`,
+                        `تسک «${activeTask.name}» از ساعت ${startTimeStr} در جریان است ⏳\nاول آن را پایان بده، بعد تسک جدید را شروع کن.`
                     );
                     return;
                 }
 
                 const todayTasks = await this.userService.getTasksToday(user.id);
                 const selectedTask = todayTasks.find(t => t.name === text);
-
                 if (!selectedTask) return;
 
-                const task = await this.userService.startTask(
-                    user.id,
-                    selectedTask.id
-                );
+                const task = await this.userService.startTask(user.id, selectedTask.id);
 
                 await this.sendMenu(
                     chatId,
                     user.id,
                     `تسک «${task.name}» دوباره شروع شد 🕒`
                 );
+            }
+
+            if (state === 'DeletingTask' && text.startsWith('🗑 ')) {
+                const taskName = text.replace('🗑 ', '');
+
+                const deleted = await this.userService.deleteTaskByNameToday(
+                    user.id,
+                    taskName,
+                );
+
+                this.userState.set(chatId, 'IDLE');
+
+                if (!deleted) {
+                    await this.sendMenu(chatId, user.id, '❌ تسک پیدا نشد');
+                    return;
+                }
+
+                await this.sendMenu(
+                    chatId,
+                    user.id,
+                    `تسک «${taskName}» حذف شد 🗑`,
+                );
+                return;
             }
         });
     }
@@ -314,7 +390,7 @@ export class TelegramService implements OnModuleInit {
             { text: t.name },
         ]);
 
-        keyboard.push([{ text: 'برگشت' }]);
+        keyboard.push([{ text: '🔙 برگشت' }]);
 
         await this.bot.sendMessage(
             chatId,
@@ -326,6 +402,41 @@ export class TelegramService implements OnModuleInit {
                 },
             },
         );
+    }
+
+    private async sendTaskDeleteList(chatId: number, userId: number) {
+        const tasks = await this.userService.getTasksToday(userId);
+
+        if (!tasks.length) {
+            await this.bot.sendMessage(chatId, 'هیچ تسکی برای حذف وجود ندارد.');
+            this.userState.set(chatId, 'IDLE');
+            return;
+        }
+
+        const keyboard: KeyboardButton[][] = tasks.map(t => [
+            { text: `🗑 ${t.name}` },
+        ]);
+
+        keyboard.push([{ text: '⬅️ برگشت' }]);
+
+        await this.bot.sendMessage(
+            chatId,
+            'کدوم تسک رو می‌خوای حذف کنی؟',
+            {
+                reply_markup: {
+                    keyboard,
+                    resize_keyboard: true,
+                },
+            },
+        );
+    }
+
+    private isOutsideWorkingHours(): boolean {
+        const now = new Date();
+        const hour = now.getHours();
+
+        // از 22 تا 8 صبح
+        return hour >= 22 || hour < 8;
     }
 
 }

@@ -158,4 +158,32 @@ export class UserService {
         });
     }
 
+    async deleteTaskByNameToday(userId: number, name: string) {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const task = await this.prisma.task.findFirst({
+            where: {
+                userId,
+                name,
+                startTime: {
+                    gte: startOfDay,
+                    lte: endOfDay,
+                },
+            },
+        });
+
+        if (!task) return false;
+
+        await this.prisma.task.delete({
+            where: { id: task.id },
+        });
+
+        return true;
+    }
+
+
 }
