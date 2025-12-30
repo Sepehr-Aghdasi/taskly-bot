@@ -70,33 +70,3 @@ bot.onText(/\/end_task/, async (msg) => {
 
     bot.sendMessage(chatId, `تسک "${task.name}" تموم شد. ⏱ مدت زمان: ${task.duration} دقیقه`);
 });
-
-
-/**
- * هندلر پیام‌های آزاد – فقط برای وارد کردن اسم تسک
- */
-// bot.on('message', async (msg) => {
-//     const chatId = msg.chat.id;
-//     const text = msg.text;
-
-//     if (!text) return;
-
-//     // اگر پیام فرمان است، کاری نکن
-//     if (text.startsWith('/')) return;
-
-//     // اگر کاربر در حالت وارد کردن نام تسک نیست، کاری نکن
-//     if (!taskNameMap.has(chatId)) return;
-
-//     const telegramId = msg.from?.id.toString();
-//     const user = await userService.findByTelegramId(telegramId!);
-//     if (!user) {
-//         bot.sendMessage(chatId, 'اول باید /start بزنی!');
-//         taskNameMap.delete(chatId);
-//         return;
-//     }
-
-//     const task = await userService.addTask(user.id, text);
-//     taskNameMap.delete(chatId);
-
-//     bot.sendMessage(chatId, `تسک "${task.name}" از الان شروع شد. 🕒`);
-// });
