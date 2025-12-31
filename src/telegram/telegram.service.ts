@@ -68,7 +68,6 @@ export class TelegramService implements OnModuleInit {
                 const totalMins = totalMinutes % 60;
                 reportText += `\n⏱ مجموع: ${totalMinutes} دقیقه (${totalHours} ساعت و ${totalMins} دقیقه)`;
 
-                // ارسال پیام به کاربر
                 this.bot.sendMessage(user.telegramId, reportText);
             }
         });
@@ -123,39 +122,6 @@ export class TelegramService implements OnModuleInit {
             await this.sendMenu(chatId, user.id, `سلام ${username} 👋`);
         });
     }
-
-    // private handleAddTask() {
-    //     this.bot.onText(/افزودن تسک/, async (msg) => {
-    //         const chatId = msg.chat.id;
-    //         const telegramId = msg.from.id.toString();
-    //         const user = await this.userService.findByTelegramId(telegramId);
-    //         if (!user) return;
-
-    //         if (this.isOutsideWorkingHours()) {
-    //             await this.bot.sendMessage(
-    //                 chatId,
-    //                 '⏰ خارج از ساعات مجاز کاری هست.\nامکان شروع تسک فقط بین ۸ صبح تا ۱۰ شب وجود دارد.'
-    //             );
-    //             return;
-    //         }
-
-    //         const activeTask = await this.userService.getActiveTask(user.id);
-    //         if (activeTask) {
-    //             await this.sendMenu(chatId, user.id, 'یک تسک فعال داری');
-    //             return;
-    //         }
-
-    //         // ✅ اصلاح این خط
-    //         this.userState.set(chatId, 'AddingTask');
-
-    //         await this.bot.sendMessage(chatId, 'اسم تسک رو وارد کن 👇', {
-    //             reply_markup: {
-    //                 keyboard: [[{ text: '🔙 برگشت' }]],
-    //                 resize_keyboard: true,
-    //             },
-    //         });
-    //     });
-    // }
 
     private handleAddTask() {
         this.bot.onText(/افزودن تسک/, async (msg) => {
@@ -371,11 +337,15 @@ export class TelegramService implements OnModuleInit {
                 const startStr = start.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
                 const endStr = end.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
 
-                reportText += `- ${t.name}: ${this.formatDuration(duration)} (از ${startStr} تا ${endStr})\n`;
+                reportText += `- ${t.name}: ${this.formatDuration(duration)} (شروع: ${startStr} پایان: ${endStr})\n`;
                 totalMinutes += duration;
             } else {
+                const now = new Date();
+                const duration = Math.floor((now.getTime() - start.getTime()) / 60000); // مدت زمان فعلی
                 const startStr = start.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
-                reportText += `- ${t.name}: ⏳ هنوز پایان نیافته (شروع: ${startStr})\n`;
+
+                reportText += `- ${t.name}: ${this.formatDuration(duration)} (شروع: ${startStr} پایان: هنوز پایان نیافته ⏳)\n`;
+                totalMinutes += duration;
             }
         });
 
