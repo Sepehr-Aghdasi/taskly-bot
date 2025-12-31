@@ -41,34 +41,15 @@ export class TelegramService implements OnModuleInit {
     private scheduleDailyReport() {
         // هر روز ساعت 16:45
         cron.schedule('45 16 * * *', async () => {
-            const users = await this.userService.getAllUsers(); // همه کاربران ثبت شده
+            const users = await this.userService.getAllUsers();
 
             for (const user of users) {
-                const tasks = await this.userService.getTasksToday(user.id);
-
-                let reportText = '📊 گزارش امروز (خودکار):\n';
-                let totalMinutes = 0;
-
-                tasks.forEach((t) => {
-                    const start = t.startTime;
-                    if (t.endTime) {
-                        const end = t.endTime;
-                        const duration = t.duration ?? Math.floor((end.getTime() - start.getTime()) / 60000);
-                        const startStr = start.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
-                        const endStr = end.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
-                        reportText += `- ${t.name}: ${duration} دقیقه (از ${startStr} تا ${endStr})\n`;
-                        totalMinutes += duration;
-                    } else {
-                        const startStr = start.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
-                        reportText += `- ${t.name}: ⏳ هنوز پایان نیافته (شروع: ${startStr})\n`;
-                    }
-                });
-
-                const totalHours = Math.floor(totalMinutes / 60);
-                const totalMins = totalMinutes % 60;
-                reportText += `\n⏱ مجموع: ${totalMinutes} دقیقه (${totalHours} ساعت و ${totalMins} دقیقه)`;
-
-                this.bot.sendMessage(user.telegramId, reportText);
+                // telegramId تو دیتابیس string هست → برای sendMessage هم همینه
+                await this.sendReport(
+                    Number(user.telegramId),
+                    user.id,
+                    true // isAutomate
+                );
             }
         });
     }
@@ -318,14 +299,14 @@ export class TelegramService implements OnModuleInit {
         return `${hours} ساعت و ${mins} دقیقه`;
     }
 
-    private async sendReport(chatId: number, userId: number) {
+    private async sendReport(chatId: number, userId: number, isAutomate: boolean = false) {
         const tasks = await this.userService.getTasksToday(userId);
         if (!tasks.length) {
             await this.bot.sendMessage(chatId, 'هیچ تسکی امروز ثبت نشده.');
             return;
         }
 
-        let reportText = '📊 گزارش امروز:\n';
+        let reportText = isAutomate ? '📊 گزارش امروز (خودکار):\n' : '📊 گزارش امروز:\n';
         let totalMinutes = 0;
 
         tasks.forEach((t) => {
