@@ -345,6 +345,13 @@ export class TelegramService implements OnModuleInit {
         });
     }
 
+    private formatDuration(minutes: number): string {
+        if (minutes < 60) return `${minutes} دقیقه`;
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return `${hours} ساعت و ${mins} دقیقه`;
+    }
+
     private async sendReport(chatId: number, userId: number) {
         const tasks = await this.userService.getTasksToday(userId);
         if (!tasks.length) {
@@ -363,7 +370,8 @@ export class TelegramService implements OnModuleInit {
                 const duration = t.duration ?? Math.floor((end.getTime() - start.getTime()) / 60000);
                 const startStr = start.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
                 const endStr = end.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
-                reportText += `- ${t.name}: ${duration} دقیقه (از ${startStr} تا ${endStr})\n`;
+
+                reportText += `- ${t.name}: ${this.formatDuration(duration)} (از ${startStr} تا ${endStr})\n`;
                 totalMinutes += duration;
             } else {
                 const startStr = start.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
@@ -371,9 +379,7 @@ export class TelegramService implements OnModuleInit {
             }
         });
 
-        const totalHours = Math.floor(totalMinutes / 60);
-        const totalMins = totalMinutes % 60;
-        reportText += `\n⏱ مجموع: ${totalMinutes} دقیقه (${totalHours} ساعت و ${totalMins} دقیقه)`;
+        reportText += `\n⏱ مجموع: ${this.formatDuration(totalMinutes)}`;
 
         await this.bot.sendMessage(chatId, reportText);
     }
