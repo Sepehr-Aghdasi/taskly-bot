@@ -417,7 +417,7 @@ export class TelegramService implements OnModuleInit {
             { text: `🗑 ${t.name}` },
         ]);
 
-        keyboard.push([{ text: '⬅️ برگشت' }]);
+        keyboard.push([{ text: '🔙 برگشت' }]);
 
         await this.bot.sendMessage(
             chatId,
