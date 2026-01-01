@@ -4,7 +4,6 @@ import { BotButtons } from 'src/shared/bot-buttons.enum';
 import { UserState } from 'src/shared/user-state.type';
 import { UserService } from 'src/user/user.service';
 
-
 @Injectable()
 export class TelegramService implements OnModuleInit {
     private bot: TelegramBot;
@@ -144,6 +143,63 @@ export class TelegramService implements OnModuleInit {
                 await this.bot.sendMessage(chatId, 'یک تسک را برای شروع دوباره انتخاب کن:', {
                     reply_markup: { keyboard, resize_keyboard: true },
                 });
+                return;
+            }
+
+            if (text === BotButtons.DELETE_TASK) {
+                const tasks = await this.userService.getTodayReport(user.id);
+                if (!tasks.length) {
+                    await this.bot.sendMessage(chatId, 'هیچ تسکی برای حذف وجود ندارد.');
+                    return;
+                }
+
+                const keyboard = tasks.map(t => [{ text: `${t.name} (${t.code})`, code: t.code }]);
+                keyboard.push([{ text: BotButtons.BACK, code: BotButtons.BACK }]);
+
+                this.userState.set(chatId, 'DeletingTask');
+                await this.bot.sendMessage(chatId, 'کدام تسک را می‌خوای حذف کنی؟', {
+                    reply_markup: { keyboard, resize_keyboard: true, one_time_keyboard: true },
+                });
+                return;
+            }
+
+            if (state === 'DeletingTask') {
+                if (text === BotButtons.BACK) {
+                    this.userState.set(chatId, 'IDLE');
+                    await this.sendMenu(chatId, user.id);
+                    return;
+                }
+
+                // Extract code from text
+                const codeMatch = text.match(/\(([^)]+)\)$/);
+                if (!codeMatch) {
+                    await this.bot.sendMessage(chatId, '⚠️ تسک نامعتبر است.');
+                    return;
+                }
+                const code = codeMatch[1];
+
+                const tasks = await this.userService.getTodayReport(user.id);
+                const selected = tasks.find(t => t.code === code);
+
+                if (!selected) {
+                    await this.bot.sendMessage(chatId, '⚠️ تسک پیدا نشد یا معتبر نیست.');
+                    return;
+                }
+
+                const activeSession = await this.userService.getActiveSession(user.id);
+                if (activeSession && activeSession.taskId === selected.id) {
+                    await this.bot.sendMessage(
+                        chatId,
+                        `⛔ تسک «${selected.name}» با کد (${selected.code}) در حال اجراست.\n` +
+                        `اول این تسک رو متوقف کن، سپس می‌تونی حذفش کنی.`
+                    );
+                    return;
+                }
+
+                await this.userService.deleteTask(selected.id);
+                this.userState.set(chatId, 'IDLE');
+
+                await this.sendMenu(chatId, user.id, `تسک «${selected.name}» با کد (${selected.code}) حذف شد ✅`);
                 return;
             }
 

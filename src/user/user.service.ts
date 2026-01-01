@@ -87,6 +87,10 @@ export class UserService {
         });
     }
 
+    async deleteTask(taskId: number) {
+        await this.prisma.task.delete({ where: { id: taskId } });
+    }
+
     async startExistingTask(task: Task) {
         const activeSession = await this.getActiveSession(task.userId);
         if (activeSession) return activeSession;
