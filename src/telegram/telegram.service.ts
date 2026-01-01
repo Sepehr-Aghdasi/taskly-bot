@@ -360,7 +360,7 @@ export class TelegramService implements OnModuleInit {
 
     private isOutsideWorkingHours() {
         const hour = new Date().getHours();
-        return hour >= 24 || hour < 8;
+        return hour >= 22 || hour < 8;
     }
 
     private formatMinutes(totalMinutes: number) {
