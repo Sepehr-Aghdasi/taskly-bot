@@ -14,18 +14,24 @@ model User {
   timezone   String   @default("Asia/Tehran")
   createdAt  DateTime @default(now())
 
-  tasks      Task[]
+  tasks Task[]
 }
 
 model Task {
-  id        Int      @id @default(autoincrement())
+  id        Int           @id @default(autoincrement())
   name      String
-  startTime DateTime
+  code      String        @unique
+  userId    Int
+  user      User          @relation(fields: [userId], references: [id])
+  createdAt DateTime      @default(now())
+  sessions  TaskSession[]
+}
+
+model TaskSession {
+  id        Int       @id @default(autoincrement())
+  taskId    Int
+  task      Task      @relation(fields: [taskId], references: [id])
+  startTime DateTime  @default(now())
   endTime   DateTime?
   duration  Int?
-
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-
-  createdAt DateTime @default(now())
 }
