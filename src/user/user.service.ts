@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Task } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { CreateOrUpdateUserDto } from './dto/create-or-update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -11,15 +12,30 @@ export class UserService {
         return this.prisma.user.findMany();
     }
 
-    async getOrCreate(telegramId: string, username?: string) {
+    async getOrCreate(telegramId: string, data?: CreateOrUpdateUserDto) {
         let user = await this.prisma.user.findUnique({
             where: { telegramId },
         });
 
         if (!user) {
             user = await this.prisma.user.create({
-                data: { telegramId, username },
+                data: {
+                    telegramId,
+                    username: data?.username,
+                    firstName: data?.firstName,
+                    lastName: data?.lastName,
+                },
             });
+        } else {
+            if (!user.firstName || !user.lastName) {
+                user = await this.prisma.user.update({
+                    where: { telegramId },
+                    data: {
+                        firstName: user.firstName ?? data?.firstName,
+                        lastName: user.lastName ?? data?.lastName,
+                    },
+                });
+            }
         }
 
         return user;

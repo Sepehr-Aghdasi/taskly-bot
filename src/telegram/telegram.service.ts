@@ -42,13 +42,23 @@ export class TelegramService implements OnModuleInit {
     private handleStart() {
         this.bot.onText(/\/start/, async (msg) => {
             const chatId = msg.chat.id;
-            const telegramId = msg.from.id.toString();
-            const username = msg.from.first_name || 'فلانی';
 
-            const user = await this.userService.getOrCreate(telegramId, username);
+            const telegramId = msg.from.id.toString();
+            const firstName = msg.from.first_name;
+            const lastName = msg.from.last_name;
+            const username = msg.from.username;
+
+            const user = await this.userService.getOrCreate(telegramId, {
+                username,
+                firstName,
+                lastName,
+            });
+
             this.userState.set(chatId, 'IDLE');
 
-            await this.sendMenu(chatId, user.id, `سلام ${username} 👋`);
+            const displayName = user.firstName || user.username || 'فلانی';
+
+            await this.sendMenu(chatId, user.id, `سلام ${displayName} 👋`);
         });
     }
 

@@ -11,6 +11,8 @@ model User {
   id         Int      @id @default(autoincrement())
   telegramId String   @unique
   username   String?
+  firstName  String?
+  lastName   String?
   timezone   String   @default("Asia/Tehran")
   createdAt  DateTime @default(now())
 
@@ -18,13 +20,14 @@ model User {
 }
 
 model Task {
-  id        Int           @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   name      String
-  code      String        @unique
+  code      String   @unique
   userId    Int
-  user      User          @relation(fields: [userId], references: [id])
-  createdAt DateTime      @default(now())
-  sessions  TaskSession[]
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  sessions TaskSession[]
 }
 
 model TaskSession {
