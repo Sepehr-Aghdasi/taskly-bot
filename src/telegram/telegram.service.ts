@@ -291,6 +291,7 @@ export class TelegramService implements OnModuleInit {
 
         let reportText = isAutomate ? '📊 (خودکار) گزارش امروز:\n' : '📊 گزارش امروز:\n';
         let totalDayMinutes = 0;
+        const now = new Date();
 
         for (const task of tasks) {
             let taskMinutes = 0;
@@ -303,18 +304,22 @@ export class TelegramService implements OnModuleInit {
                     minute: '2-digit',
                 });
 
-                const end = session.endTime
-                    ? session.endTime.toLocaleTimeString('fa-IR', {
+                let end: string;
+                let sessionDuration = 0;
+
+                if (session.endTime) {
+                    end = session.endTime.toLocaleTimeString('fa-IR', {
                         hour: '2-digit',
                         minute: '2-digit',
-                    })
-                    : '⏳';
+                    });
+                    sessionDuration = session.duration ?? 0;
+                } else {
+                    end = '⏳';
+                    sessionDuration = Math.floor((now.getTime() - session.startTime.getTime()) / 60000);
+                }
 
                 reportText += `⏱ ${start} تا ${end}\n`;
-
-                if (session.duration) {
-                    taskMinutes += session.duration;
-                }
+                taskMinutes += sessionDuration;
             }
 
             totalDayMinutes += taskMinutes;
@@ -355,7 +360,7 @@ export class TelegramService implements OnModuleInit {
 
     private isOutsideWorkingHours() {
         const hour = new Date().getHours();
-        return hour >= 22 || hour < 8;
+        return hour >= 24 || hour < 8;
     }
 
     private formatMinutes(totalMinutes: number) {
