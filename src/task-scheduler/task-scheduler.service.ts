@@ -1,13 +1,11 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as cron from 'node-cron';
-import { UserService } from 'src/user/user.service';
 import { TelegramService } from 'src/telegram/telegram.service';
 
 @Injectable()
 export class TaskSchedulerService implements OnModuleInit {
 
     constructor(
-        private userService: UserService,
         private telegramService: TelegramService,
     ) { }
 
