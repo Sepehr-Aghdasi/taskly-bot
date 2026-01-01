@@ -332,9 +332,20 @@ export class TelegramService implements OnModuleInit {
         }
     }
 
+    async forceCloseAndNotify() {
+        const closedSessions = await this.userService.forceCloseAllActiveSessions();
+
+        for (const session of closedSessions) {
+            await this.bot.sendMessage(
+                Number(session.telegramId),
+                `⏹️ تسک «${session.taskName}» با کد «${session.taskCode}» به‌صورت خودکار پایان یافت.`
+            );
+        }
+    }
+
     private isOutsideWorkingHours() {
-        const h = new Date().getHours();
-        return h >= 22 || h < 8;
+        const hour = new Date().getHours();
+        return hour >= 22 || hour < 8;
     }
 
     private formatMinutes(totalMinutes: number) {

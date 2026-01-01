@@ -152,11 +152,20 @@ export class UserService {
                 endTime: null,
             },
             include: {
-                task: true,
+                task: {
+                    include: {
+                        user: true,
+                    },
+                },
             },
         });
 
         const now = new Date();
+        const closedSessions: {
+            telegramId: string;
+            taskName: string;
+            taskCode: string;
+        }[] = [];
 
         for (const session of activeSessions) {
             const duration = Math.floor(
@@ -170,9 +179,15 @@ export class UserService {
                     duration,
                 },
             });
+
+            closedSessions.push({
+                telegramId: session.task.user.telegramId,
+                taskName: session.task.name,
+                taskCode: session.task.code,
+            });
         }
 
-        return activeSessions;
+        return closedSessions;
     }
 
 }
