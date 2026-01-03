@@ -206,4 +206,33 @@ export class UserService {
         return closedSessions;
     }
 
+    async updateTask(taskId: number, newName: string, newCode: string) {
+        const existing = await this.prisma.task.findFirst({
+            where: {
+                code: newCode,
+                NOT: { id: taskId },
+            },
+        });
+
+        if (existing) {
+            return {
+                task: null,
+                alreadyExists: true,
+            };
+        }
+
+        const task = await this.prisma.task.update({
+            where: { id: taskId },
+            data: {
+                name: newName,
+                code: newCode,
+            },
+        });
+
+        return {
+            task,
+            alreadyExists: false,
+        };
+    }
+
 }
