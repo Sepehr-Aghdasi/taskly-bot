@@ -57,7 +57,6 @@ export class TelegramService implements OnModuleInit {
             this.userState.set(chatId, 'IDLE');
 
             const displayName = user.firstName || user.username || 'فلانی';
-
             await this.sendMenu(chatId, user.id, `سلام ${displayName} 👋`);
         });
     }
@@ -68,24 +67,11 @@ export class TelegramService implements OnModuleInit {
             const user = await this.userService.findByTelegramId(msg.from.id.toString());
             if (!user) return;
 
-            if (this.isOutsideWorkingHours()) {
-                await this.bot.sendMessage(
-                    chatId,
-                    '⏰ خارج از ساعات مجاز کاری هست.\nفقط بین ۸ صبح تا ۱۰ شب امکان شروع تسک وجود دارد.'
-                );
-                return;
-            }
-
-            const active = await this.userService.getActiveSession(user.id);
-            if (active) {
-                await this.sendMenu(chatId, user.id, 'یک تسک فعال داری');
-                return;
-            }
-
             this.userState.set(chatId, 'AddingTaskName');
+
             await this.bot.sendMessage(
                 chatId,
-                'اسم تسک رو وارد کن 👇',
+                'اسم تسک رو وارد کن 👇\n(فعلاً فقط ثبت می‌شه)',
                 { reply_markup: this.cancelKeyboard() }
             );
         });
@@ -128,7 +114,7 @@ export class TelegramService implements OnModuleInit {
 
             const state = this.userState.get(chatId);
 
-            if (text === BotButtons.BACK || text === BotButtons.CANCEL) {
+            if (text === BotButtons.CANCEL || text === BotButtons.BACK) {
                 this.userState.set(chatId, 'IDLE');
                 this.tempTaskName.delete(chatId);
                 await this.sendMenu(chatId, user.id);
@@ -143,14 +129,14 @@ export class TelegramService implements OnModuleInit {
             if (text === BotButtons.TASK_LIST) {
                 const tasks = await this.userService.getTodayReport(user.id);
                 if (!tasks.length) {
-                    await this.bot.sendMessage(chatId, 'هیچ تسکی امروز ثبت نشده.');
+                    await this.bot.sendMessage(chatId, 'هیچ تسکی ثبت نشده.');
                     return;
                 }
 
                 const keyboard = tasks.map(t => [{ text: `${t.name} (${t.code})` }]);
                 keyboard.push([{ text: BotButtons.BACK }]);
 
-                await this.bot.sendMessage(chatId, 'یک تسک را برای شروع دوباره انتخاب کن:', {
+                await this.bot.sendMessage(chatId, 'برای شروع، یک تسک انتخاب کن:', {
                     reply_markup: { keyboard, resize_keyboard: true },
                 });
                 return;
@@ -219,7 +205,7 @@ export class TelegramService implements OnModuleInit {
 
                 await this.bot.sendMessage(
                     chatId,
-                    'حالا کد یکتای تسک را وارد کن 👇',
+                    'حالا کد یکتای تسک رو وارد کن 👇',
                     { reply_markup: this.cancelKeyboard() }
                 );
                 return;
@@ -240,26 +226,23 @@ export class TelegramService implements OnModuleInit {
                     return;
                 }
 
-                await this.userService.startExistingTask(result.task);
-
                 this.userState.set(chatId, 'IDLE');
                 this.tempTaskName.delete(chatId);
 
                 await this.sendMenu(
                     chatId,
                     user.id,
-                    `تسک «${result.task.name}» با کد «${result.task.code}» شروع شد 🕒`
+                    `✅ تسک «${name}» با کد «${code}» ثبت شد.\nبرای شروع، از لیست انتخابش کن.`
                 );
+                return;
             }
 
-            // Start existing task
             if (state === 'IDLE') {
                 const tasks = await this.userService.getTodayReport(user.id);
                 const selected = tasks.find(t => `${t.name} (${t.code})` === text);
                 if (!selected) return;
 
                 const activeSession = await this.userService.getActiveSession(user.id);
-
                 if (activeSession) {
                     await this.bot.sendMessage(
                         chatId,
@@ -269,8 +252,13 @@ export class TelegramService implements OnModuleInit {
                     return;
                 }
 
+                if (this.isOutsideWorkingHours()) {
+                    await this.bot.sendMessage(chatId, '⏰ خارج از ساعات مجاز کاری هست.');
+                    return;
+                }
+
                 await this.userService.startTask(user.id, selected);
-                await this.sendMenu(chatId, user.id, `تسک «${selected.name}» دوباره شروع شد 🕒`);
+                await this.sendMenu(chatId, user.id, `🕒 تسک «${selected.name}» شروع شد`);
             }
         });
     }
