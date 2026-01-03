@@ -12,7 +12,7 @@ export class UserService {
         return this.prisma.user.findMany();
     }
 
-    async getOrCreate(telegramId: string, data?: CreateOrUpdateUserDto) {
+    async getOrCreateUser(telegramId: string, data?: CreateOrUpdateUserDto) {
         let user = await this.prisma.user.findUnique({
             where: { telegramId },
         });
