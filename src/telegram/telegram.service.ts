@@ -90,6 +90,29 @@ export class TelegramService implements OnModuleInit {
             const state = this.userState.get(chatId);
 
             if (text === BotButtons.BACK || text === BotButtons.CANCEL) {
+                const state = this.userState.get(chatId);
+
+                // If user is inside task actions, go back to task list
+                if (state === 'TaskActions') {
+                    this.selectedTask.delete(chatId);
+                    this.userState.set(chatId, 'SelectingTask');
+
+                    const tasks = await this.userService.getTodayReport(user.id);
+                    if (!tasks.length) {
+                        await this.sendMainMenu(chatId);
+                        return;
+                    }
+
+                    const keyboard = tasks.map(t => [{ text: `${t.name} (${t.code})` }]);
+                    keyboard.push([{ text: BotButtons.BACK }]);
+
+                    await this.bot.sendMessage(chatId, 'یک تسک انتخاب کن:', {
+                        reply_markup: { keyboard, resize_keyboard: true },
+                    });
+                    return;
+                }
+
+                // Default behavior: go back to main menu
                 this.userState.set(chatId, 'IDLE');
                 this.tempTaskName.delete(chatId);
                 this.selectedTask.delete(chatId);
