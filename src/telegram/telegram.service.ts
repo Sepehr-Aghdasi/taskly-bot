@@ -152,7 +152,11 @@ export class TelegramService implements OnModuleInit {
                 if (text === BotButtons.START_SELECTED_TASK) {
                     const active = await this.userService.getActiveSession(user.id);
                     if (active) {
-                        await this.bot.sendMessage(chatId, '⛔ اول تسک فعال رو تموم کن.');
+                        // Show active task name and code for clarity
+                        await this.bot.sendMessage(
+                            chatId,
+                            `⛔ اول تسک فعال رو تموم کن.\n📌 در حال اجرا: ${active.task.name} (${active.task.code})`
+                        );
                         return;
                     }
 
@@ -165,6 +169,21 @@ export class TelegramService implements OnModuleInit {
                     this.userState.set(chatId, 'IDLE');
                     this.selectedTask.delete(chatId);
                     await this.sendMainMenu(chatId, '🕒 تسک شروع شد.');
+                    return;
+                }
+
+                if (text === BotButtons.END_SELECTED_TASK) {
+                    const active = await this.userService.getActiveSession(user.id);
+                    // Check if the selected task is currently active
+                    if (!active || active.taskId !== task.id) {
+                        await this.bot.sendMessage(chatId, '⚠️ این تسک در حال اجرا نیست.');
+                        return;
+                    }
+
+                    await this.userService.endTask(user.id);
+                    this.userState.set(chatId, 'IDLE');
+                    this.selectedTask.delete(chatId);
+                    await this.sendMainMenu(chatId, `⏹️ تسک «${task.name}» پایان یافت.`);
                     return;
                 }
 
