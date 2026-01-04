@@ -241,12 +241,14 @@ export class TelegramService implements OnModuleInit {
 
     private async sendReport(chatId: number, userId: number, isAutomate: boolean = false) {
         const tasks = await this.userService.getTodayReport(userId);
+
         if (!tasks.length) {
             await this.bot.sendMessage(chatId, 'هیچ تسکی امروز ثبت نشده.');
             return;
         }
 
         let reportText = isAutomate ? '📊 (خودکار) گزارش امروز:\n' : '📊 گزارش امروز:\n';
+
         let totalDayMinutes = 0;
         const now = new Date();
 
@@ -256,19 +258,22 @@ export class TelegramService implements OnModuleInit {
             reportText += `\n📌 ${task.name} (کد: ${task.code})\n`;
 
             for (const session of task.sessions) {
-                const start = session.startTime.toLocaleTimeString('fa-IR', {
+                const start = session.startTime.toLocaleTimeString('en-US', {
                     hour: '2-digit',
                     minute: '2-digit',
+                    hour12: false,
                 });
 
                 let end: string;
                 let sessionDuration = 0;
 
                 if (session.endTime) {
-                    end = session.endTime.toLocaleTimeString('fa-IR', {
+                    end = session.endTime.toLocaleTimeString('en-US', {
                         hour: '2-digit',
                         minute: '2-digit',
+                        hour12: false,
                     });
+
                     sessionDuration = session.duration ?? 0;
                 } else {
                     end = '⏳';
