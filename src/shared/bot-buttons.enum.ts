@@ -6,6 +6,7 @@ export enum BotButtons {
 
     // ===== Task Actions =====
     START_SELECTED_TASK = "▶️ شروع تسک",
+    END_SELECTED_TASK = "⏹️ پایان تسک",
     DELETE_SELECTED_TASK = "🗑 حذف تسک",
     EDIT_TASK = "✏️ ویرایش تسک",
 
