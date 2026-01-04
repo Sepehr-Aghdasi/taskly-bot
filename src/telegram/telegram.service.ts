@@ -33,12 +33,25 @@ export class TelegramService implements OnModuleInit {
     }
 
     private async sendTaskActionsMenu(chatId: number, task: any) {
-        const keyboard: KeyboardButton[][] = [
-            [{ text: BotButtons.START_SELECTED_TASK }],
+        // Check if this task is currently active
+        const activeSession = await this.userService.getActiveSession(task.userId);
+
+        let keyboard: KeyboardButton[][] = [];
+
+        if (activeSession && activeSession.taskId === task.id) {
+            // If the task is active, show only the "End Task" button
+            keyboard.push([{ text: BotButtons.END_SELECTED_TASK }]);
+        } else {
+            // If the task is not active, show the "Start Task" button
+            keyboard.push([{ text: BotButtons.START_SELECTED_TASK }]);
+        }
+
+        // Always show these options
+        keyboard.push(
             [{ text: BotButtons.DELETE_SELECTED_TASK }],
             [{ text: BotButtons.EDIT_TASK }],
-            [{ text: BotButtons.BACK }],
-        ];
+            [{ text: BotButtons.BACK }]
+        );
 
         await this.bot.sendMessage(
             chatId,
@@ -197,7 +210,6 @@ export class TelegramService implements OnModuleInit {
 
                 if (text === BotButtons.EDIT_TASK) {
                     this.userState.set(chatId, 'EditingTaskName');
-
                     await this.bot.sendMessage(
                         chatId,
                         '✏️ اسم جدید تسک رو وارد کن 👇',
