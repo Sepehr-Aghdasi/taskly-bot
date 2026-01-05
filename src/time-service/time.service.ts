@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class TimeService {
-    private readonly IRAN_TZ = "Asia/Tehran";
+    public readonly IRAN_TZ = "Asia/Tehran";
 
     // Current time in UTC
     nowUTC(): Date {
@@ -20,7 +20,7 @@ export class TimeService {
 
     // Format time for messages (UI layer)
     formatIranTime(date: Date): string {
-        return date.toLocaleTimeString("en-GB", {
+        return date.toLocaleTimeString("en-US", {
             timeZone: this.IRAN_TZ,
             hour: "2-digit",
             minute: "2-digit",
