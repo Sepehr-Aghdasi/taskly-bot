@@ -1,7 +1,9 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Task } from '@prisma/client';
 import TelegramBot, { KeyboardButton } from 'node-telegram-bot-api';
 import { BotButtons } from 'src/shared/bot-buttons.enum';
 import { UserState } from 'src/shared/user-state.type';
+import { TimeService } from 'src/time-service/time.service';
 import { UserService } from 'src/user/user.service';
 
 @Injectable()
@@ -11,7 +13,10 @@ export class TelegramService implements OnModuleInit {
     private tempTaskName = new Map<number, string>();
     private selectedTask = new Map<number, any>();
 
-    constructor(private readonly userService: UserService) { }
+    constructor(
+        private readonly userService: UserService,
+        private readonly timeService: TimeService
+    ) { }
 
     onModuleInit() {
         this.bot = new TelegramBot(process.env.TELEGRAM_TOKEN, { polling: true });
@@ -20,7 +25,7 @@ export class TelegramService implements OnModuleInit {
         this.handleMessages();
     }
 
-    private async sendMainMenu(chatId: number, text = 'منوی اصلی') {
+    private async sendMainMenu(chatId: number, text = "منوی اصلی") {
         const keyboard: KeyboardButton[][] = [
             [{ text: BotButtons.ADD_TASK }],
             [{ text: BotButtons.TASK_LIST }],
@@ -32,7 +37,7 @@ export class TelegramService implements OnModuleInit {
         });
     }
 
-    private async sendTaskActionsMenu(chatId: number, task: any) {
+    private async sendTaskActionsMenu(chatId: number, task: Task) {
         // Check if this task is currently active
         const activeSession = await this.userService.getActiveSession(task.userId);
 
@@ -246,7 +251,7 @@ export class TelegramService implements OnModuleInit {
                 const task = this.selectedTask.get(chatId);
                 if (!task) return;
 
-                task._newName = text; // موقت
+                task._newName = text;
                 this.userState.set(chatId, 'EditingTaskCode');
 
                 await this.bot.sendMessage(
@@ -304,7 +309,6 @@ export class TelegramService implements OnModuleInit {
         let reportText = isAutomate ? '📊 (خودکار) گزارش امروز:\n' : '📊 گزارش امروز:\n';
 
         let totalDayMinutes = 0;
-        const now = new Date();
 
         for (const task of tasks) {
             let taskMinutes = 0;
@@ -312,26 +316,17 @@ export class TelegramService implements OnModuleInit {
             reportText += `\n📌 ${task.name} (کد: ${task.code})\n`;
 
             for (const session of task.sessions) {
-                const start = session.startTime.toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false,
-                });
+                const start = this.timeService.formatIranTime(session.startTime);
 
                 let end: string;
                 let sessionDuration = 0;
 
                 if (session.endTime) {
-                    end = session.endTime.toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false,
-                    });
-
+                    end = this.timeService.formatIranTime(session.endTime);
                     sessionDuration = session.duration ?? 0;
                 } else {
                     end = '⏳';
-                    sessionDuration = Math.floor((now.getTime() - session.startTime.getTime()) / 60000);
+                    sessionDuration = this.timeService.diffMinutes(session.startTime, this.timeService.nowUTC());
                 }
 
                 reportText += `⏱ ${start} تا ${end}\n`;
@@ -381,10 +376,8 @@ export class TelegramService implements OnModuleInit {
         };
     }
 
-    private isOutsideWorkingHours() {
-        const iranTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Tehran" });
-        const hour = new Date(iranTime).getHours();
-
+    private isOutsideWorkingHours(): boolean {
+        const hour = this.timeService.getIranHour();
         return hour >= 22 || hour < 8;
     }
 

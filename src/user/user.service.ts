@@ -1,12 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { Task } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { TimeService } from 'src/time-service/time.service';
 import { CreateOrUpdateUserDto } from './dto/create-or-update-user.dto';
 
 @Injectable()
 export class UserService {
 
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly timeService: TimeService,
+    ) { }
 
     async getAllUsers() {
         return this.prisma.user.findMany();
@@ -87,9 +91,8 @@ export class UserService {
         if (!session) return null;
 
         const endTime = new Date();
-        const duration = Math.floor(
-            (endTime.getTime() - session.startTime.getTime()) / 60000,
-        );
+        const duration = this.timeService.diffMinutes(session.startTime, endTime);
+
 
         return this.prisma.taskSession.update({
             where: { id: session.id },
@@ -105,19 +108,6 @@ export class UserService {
 
     async deleteTask(taskId: number) {
         await this.prisma.task.delete({ where: { id: taskId } });
-    }
-
-    async startExistingTask(task: Task) {
-        const activeSession = await this.getActiveSession(task.userId);
-        if (activeSession) return activeSession;
-
-        return this.prisma.taskSession.create({
-            data: {
-                taskId: task.id,
-                startTime: new Date(),
-            },
-            include: { task: true },
-        });
     }
 
     async getActiveSession(userId: number) {
@@ -138,11 +128,7 @@ export class UserService {
     }
 
     async getTodayReport(userId: number) {
-        const startOfDay = new Date();
-        startOfDay.setHours(0, 0, 0, 0);
-
-        const endOfDay = new Date();
-        endOfDay.setHours(23, 59, 59, 999);
+        const { startOfDay, endOfDay } = this.timeService.getIranDayRange();
 
         return this.prisma.task.findMany({
             where: { userId },
@@ -176,7 +162,7 @@ export class UserService {
             },
         });
 
-        const now = new Date();
+        const now = this.timeService.nowUTC();
         const closedSessions: {
             telegramId: string;
             taskName: string;
