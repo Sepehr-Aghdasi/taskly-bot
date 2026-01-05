@@ -193,7 +193,6 @@ export class TelegramService implements OnModuleInit {
                 if (text === BotButtons.START_SELECTED_TASK) {
                     const active = await this.userService.getActiveSession(user.id);
                     if (active) {
-                        // Show active task name and code for clarity
                         await this.bot.sendMessage(
                             chatId,
                             `⛔ اول تسک فعال رو تموم کن.\n📌 در حال اجرا: ${active.task.name} (${active.task.code})`
@@ -229,9 +228,20 @@ export class TelegramService implements OnModuleInit {
                 }
 
                 if (text === BotButtons.DELETE_SELECTED_TASK) {
+                    const active = await this.userService.getActiveSession(user.id);
+
+                    if (active && active.taskId === task.id) {
+                        await this.bot.sendMessage(
+                            chatId,
+                            `⛔ تسک «${task.name} (${task.code})» فعاله و نمی‌شه حذفش کرد.`
+                        );
+                        return;
+                    }
+
                     await this.userService.deleteTask(task.id);
                     this.userState.set(chatId, 'IDLE');
                     this.selectedTask.delete(chatId);
+
                     await this.sendMainMenu(chatId, '🗑 تسک حذف شد.');
                     return;
                 }
