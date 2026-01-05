@@ -382,7 +382,9 @@ export class TelegramService implements OnModuleInit {
     }
 
     private isOutsideWorkingHours() {
-        const hour = new Date().getHours();
+        const iranTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Tehran" });
+        const hour = new Date(iranTime).getHours();
+
         return hour >= 22 || hour < 8;
     }
 
