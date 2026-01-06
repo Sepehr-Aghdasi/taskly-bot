@@ -1,16 +1,16 @@
+import { Task, User } from '@prisma/client';
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { Task } from '@prisma/client';
 import TelegramBot, { KeyboardButton } from 'node-telegram-bot-api';
-import { BotButtons } from 'src/shared/bot-buttons.enum';
-import { UserState } from 'src/shared/user-state.type';
-import { TimeService } from 'src/time-service/time.service';
 import { UserService } from 'src/user/user.service';
+import { UserState } from 'src/shared/user-state.type';
+import { BotButtons } from 'src/shared/bot-buttons.enum';
+import { TimeService } from 'src/time-service/time.service';
 
 @Injectable()
 export class TelegramService implements OnModuleInit {
     private bot: TelegramBot;
     private userState = new Map<number, UserState>();
-    private tempTaskName = new Map<number, string>();
+    private cancelMessageIds = new Map<number, number>();
     private selectedTask = new Map<number, any>();
 
     constructor(
@@ -23,6 +23,7 @@ export class TelegramService implements OnModuleInit {
 
         this.handleStart();
         this.handleMessages();
+        this.handleCallbacks(); // Only need for canceling the add task => inline keyboard button.
     }
 
     private async sendMainMenu(chatId: number, text = "منوی اصلی") {
@@ -38,20 +39,16 @@ export class TelegramService implements OnModuleInit {
     }
 
     private async sendTaskActionsMenu(chatId: number, task: Task) {
-        // Check if this task is currently active
         const activeSession = await this.userService.getActiveSession(task.userId);
 
         let keyboard: KeyboardButton[][] = [];
 
         if (activeSession && activeSession.taskId === task.id) {
-            // If the task is active, show only the "End Task" button
             keyboard.push([{ text: BotButtons.END_SELECTED_TASK }]);
         } else {
-            // If the task is not active, show the "Start Task" button
             keyboard.push([{ text: BotButtons.START_SELECTED_TASK }]);
         }
 
-        // Always show these options
         keyboard.push(
             [{ text: BotButtons.DELETE_SELECTED_TASK }],
             [{ text: BotButtons.EDIT_TASK }],
@@ -67,20 +64,24 @@ export class TelegramService implements OnModuleInit {
 
     private handleStart() {
         this.bot.onText(/\/start/, async (msg) => {
-            const chatId = msg.chat.id;
-
-            const user = await this.userService.getOrCreateUser(
-                msg.from.id.toString(),
-                {
-                    username: msg.from.username,
-                    firstName: msg.from.first_name,
-                    lastName: msg.from.last_name,
-                }
-            );
-
-            this.userState.set(chatId, 'MainMenu');
-            await this.sendMainMenu(chatId, `سلام ${user.firstName || 'دوست من'} 👋`);
+            this.performStart(msg);
         });
+    }
+
+    private async performStart(message: TelegramBot.Message) {
+        const chatId = message.chat.id;
+
+        const user = await this.userService.getOrCreateUser(
+            message.from.id.toString(),
+            {
+                username: message.from.username,
+                firstName: message.from.first_name,
+                lastName: message.from.last_name,
+            }
+        );
+
+        this.userState.set(chatId, 'MainMenu');
+        await this.sendMainMenu(chatId, `سلام ${user.firstName || 'دوست من'} 👋`);
     }
 
     private handleMessages() {
@@ -90,12 +91,15 @@ export class TelegramService implements OnModuleInit {
             if (!text) return;
 
             const user = await this.userService.findByTelegramId(msg.from.id.toString());
-            if (!user) return;
+            if (!user) {
+                await this.performStart(msg);
+            }
 
             const state = this.userState.get(chatId);
+            const inputStates: UserState[] = ['AddingTaskName', 'EditingTaskName'];
 
-            if (this.isNavigationCommand(text)) {
-                await this.handleNavigation(chatId, text, user);
+            if (this.isNavigationCommand(text) && !inputStates.includes(state)) {
+                await this.handleNavigation(chatId, user);
                 return;
             }
 
@@ -132,7 +136,7 @@ export class TelegramService implements OnModuleInit {
         return text === BotButtons.BACK || text === BotButtons.CANCEL;
     }
 
-    private async handleNavigation(chatId: number, text: string, user: any) {
+    private async handleNavigation(chatId: number, user: User) {
         const currentState = this.userState.get(chatId);
 
         if (currentState === 'TaskActions') {
@@ -156,7 +160,16 @@ export class TelegramService implements OnModuleInit {
         if (['SelectingTask', 'AddingTaskName', 'EditingTaskName', 'ConfirmStartNewTaskAfterEndingActive'].includes(currentState)) {
             this.userState.set(chatId, 'MainMenu');
             this.selectedTask.delete(chatId);
-            this.tempTaskName.delete(chatId);
+
+            const cancelMessageId = this.cancelMessageIds.get(chatId);
+            if (cancelMessageId) {
+                await this.bot.editMessageReplyMarkup(
+                    { inline_keyboard: [] },
+                    { chat_id: chatId, message_id: cancelMessageId }
+                );
+                this.cancelMessageIds.delete(chatId);
+            }
+
             await this.sendMainMenu(chatId);
             return;
         }
@@ -167,18 +180,67 @@ export class TelegramService implements OnModuleInit {
 
     private async promptAddTaskName(chatId: number) {
         this.userState.set(chatId, 'AddingTaskName');
-        await this.bot.sendMessage(chatId, 'اسم تسک رو وارد کن 👇', { reply_markup: this.cancelKeyboard() });
+
+        await this.bot.sendMessage(chatId, 'اسم تسک رو وارد کن 👇', {
+            reply_markup: { remove_keyboard: true }
+        });
+
+        const cancelMsg = await this.bot.sendMessage(chatId, 'برای لغو می‌تونی از این استفاده کنی:', {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: BotButtons.CANCEL, callback_data: BotButtons.CANCEL }]
+                ]
+            }
+        });
+
+        this.cancelMessageIds.set(chatId, cancelMsg.message_id);
     }
 
-    private async handleAddTask(chatId: number, text: string, user: any) {
+    private handleCallbacks() {
+        this.bot.on('callback_query', async (query) => {
+            const chatId = query.message?.chat.id;
+            if (!chatId) return;
+
+            if (query.data === BotButtons.CANCEL) {
+                this.userState.set(chatId, 'MainMenu');
+                this.selectedTask.delete(chatId);
+
+                const cancelMessageId = this.cancelMessageIds.get(chatId);
+                if (cancelMessageId) {
+                    await this.bot.editMessageReplyMarkup(
+                        { inline_keyboard: [] },
+                        { chat_id: chatId, message_id: cancelMessageId }
+                    );
+                    this.cancelMessageIds.delete(chatId);
+                }
+
+                await this.bot.answerCallbackQuery(query.id);
+                await this.sendMainMenu(chatId, '❌ لغو شد');
+                return;
+            }
+
+            await this.bot.answerCallbackQuery(query.id);
+        });
+    }
+
+    private async handleAddTask(chatId: number, text: string, user: User) {
         const task = await this.userService.getOrCreateTask(user.id, text);
-        this.tempTaskName.delete(chatId);
+
+        const cancelMessageId = this.cancelMessageIds.get(chatId);
+        if (cancelMessageId) {
+            await this.bot.editMessageReplyMarkup(
+                { inline_keyboard: [] },
+                { chat_id: chatId, message_id: cancelMessageId }
+            );
+            this.cancelMessageIds.delete(chatId);
+        }
+
         this.selectedTask.set(chatId, task);
         this.userState.set(chatId, 'TaskActions');
 
-        const keyboard: KeyboardButton[][] = [
+        const keyboard = [
             [{ text: BotButtons.START_SELECTED_TASK }],
-            [{ text: BotButtons.BACK }],
+            [{ text: BotButtons.BACK }]
         ];
 
         await this.bot.sendMessage(
@@ -188,7 +250,7 @@ export class TelegramService implements OnModuleInit {
         );
     }
 
-    private async showTaskList(chatId: number, user: any) {
+    private async showTaskList(chatId: number, user: User) {
         const tasks = await this.userService.getTodayReport(user.id);
         if (!tasks.length) {
             await this.bot.sendMessage(chatId, 'هیچ تسکی ثبت نشده.');
@@ -202,7 +264,7 @@ export class TelegramService implements OnModuleInit {
         await this.bot.sendMessage(chatId, 'یک تسک انتخاب کن:', { reply_markup: { keyboard, resize_keyboard: true } });
     }
 
-    private async handleSelectTask(chatId: number, text: string, user: any) {
+    private async handleSelectTask(chatId: number, text: string, user: User) {
         const tasks = await this.userService.getTodayReport(user.id);
         const task = tasks.find(t => t.name === text);
         if (!task) return;
@@ -212,7 +274,7 @@ export class TelegramService implements OnModuleInit {
         await this.sendTaskActionsMenu(chatId, task);
     }
 
-    private async handleTaskActions(chatId: number, text: string, user: any) {
+    private async handleTaskActions(chatId: number, text: string, user: User) {
         const task = this.selectedTask.get(chatId);
         if (!task) return;
 
@@ -276,7 +338,7 @@ export class TelegramService implements OnModuleInit {
         }
     }
 
-    private async handleConfirmStartNewTask(chatId: number, text: string, user: any) {
+    private async handleConfirmStartNewTask(chatId: number, text: string, user: User) {
         const task = this.selectedTask.get(chatId);
         if (!task) return;
 
@@ -341,7 +403,7 @@ export class TelegramService implements OnModuleInit {
                     sessionDuration = this.timeService.diffMinutes(session.startTime, this.timeService.nowUTC());
                 }
 
-                reportText += `   ⏱ ${end} ← ${start}\n`;
+                reportText += `   ⏱ ${end} تا ${start}\n`;
                 taskMinutes += sessionDuration;
             }
 
@@ -367,7 +429,7 @@ export class TelegramService implements OnModuleInit {
                     sessionDuration = this.timeService.diffMinutes(session.startTime, this.timeService.nowUTC());
                 }
 
-                reportText += `   ⏱ ${end} ← ${start}\n`;
+                reportText += `   ⏱ ${end} تا ${start}\n`;
                 taskMinutes += sessionDuration;
             }
 
