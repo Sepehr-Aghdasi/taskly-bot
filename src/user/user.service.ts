@@ -49,26 +49,20 @@ export class UserService {
         return this.prisma.user.findUnique({ where: { telegramId } });
     }
 
-    async getOrCreateTask(userId: number, name: string, code: string) {
-        const existing = await this.prisma.task.findUnique({
-            where: { code },
+    async getOrCreateTask(userId: number, name: string) {
+        const existing = await this.prisma.task.findFirst({
+            where: { userId, name },
         });
 
         if (existing) {
-            return {
-                task: existing,
-                alreadyExists: true,
-            };
+            return existing;
         }
 
         const task = await this.prisma.task.create({
-            data: { userId, name, code },
+            data: { userId, name },
         });
 
-        return {
-            task,
-            alreadyExists: false,
-        };
+        return task;
     }
 
     async startTask(userId: number, task: Task) {
@@ -92,7 +86,6 @@ export class UserService {
 
         const endTime = new Date();
         const duration = this.timeService.diffMinutes(session.startTime, endTime);
-
 
         return this.prisma.taskSession.update({
             where: { id: session.id },
@@ -150,24 +143,16 @@ export class UserService {
 
     async forceCloseAllActiveSessions() {
         const activeSessions = await this.prisma.taskSession.findMany({
-            where: {
-                endTime: null,
-            },
+            where: { endTime: null },
             include: {
                 task: {
-                    include: {
-                        user: true,
-                    },
+                    include: { user: true },
                 },
             },
         });
 
         const now = this.timeService.nowUTC();
-        const closedSessions: {
-            telegramId: string;
-            taskName: string;
-            taskCode: string;
-        }[] = [];
+        const closedSessions: { telegramId: string; taskName: string }[] = [];
 
         for (const session of activeSessions) {
             const duration = Math.floor(
@@ -176,49 +161,35 @@ export class UserService {
 
             await this.prisma.taskSession.update({
                 where: { id: session.id },
-                data: {
-                    endTime: now,
-                    duration,
-                },
+                data: { endTime: now, duration },
             });
 
             closedSessions.push({
                 telegramId: session.task.user.telegramId,
                 taskName: session.task.name,
-                taskCode: session.task.code,
             });
         }
 
         return closedSessions;
     }
 
-    async updateTask(taskId: number, newName: string, newCode: string) {
+    async updateTask(taskId: number, newName: string) {
         const existing = await this.prisma.task.findFirst({
             where: {
-                code: newCode,
+                name: newName,
                 NOT: { id: taskId },
             },
         });
 
         if (existing) {
-            return {
-                task: null,
-                alreadyExists: true,
-            };
+            return { task: null, alreadyExists: true };
         }
 
         const task = await this.prisma.task.update({
             where: { id: taskId },
-            data: {
-                name: newName,
-                code: newCode,
-            },
+            data: { name: newName },
         });
 
-        return {
-            task,
-            alreadyExists: false,
-        };
+        return { task, alreadyExists: false };
     }
-
 }

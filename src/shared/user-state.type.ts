@@ -1,1 +1,7 @@
-export type UserState = "IDLE" | "AddingTaskName" | "AddingTaskCode" | "SelectingTask" | "TaskActions" | "EditingTaskName" | "EditingTaskCode";
+export type UserState =
+    "MainMenu"
+    | "AddingTaskName"
+    | "SelectingTask"
+    | "ConfirmStartNewTaskAfterEndingActive"
+    | "TaskActions"
+    | "EditingTaskName";

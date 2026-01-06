@@ -22,10 +22,10 @@ model User {
 model Task {
   id        Int      @id @default(autoincrement())
   name      String
-  code      String   @unique
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   sessions TaskSession[]
 }

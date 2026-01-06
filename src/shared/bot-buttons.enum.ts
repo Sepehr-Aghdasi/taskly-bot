@@ -13,4 +13,6 @@ export enum BotButtons {
     // ===== Navigation =====
     BACK = "🔙 برگشت",
     CANCEL = "❌ انصراف",
+
+    START_NEW_TASK_AFTER_ENDING_ACTIVE = "🔄 پایان تسک قبلی و شروع تسک جدید"
 }
