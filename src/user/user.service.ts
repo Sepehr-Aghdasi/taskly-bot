@@ -131,15 +131,15 @@ export class UserService {
         const { startOfDay, endOfDay } = this.timeService.getIranDayRange();
 
         return this.prisma.task.findMany({
-            where: { userId },
+            where: {
+                userId,
+                createdAt: {
+                    gte: startOfDay,
+                    lte: endOfDay,
+                },
+            },
             include: {
                 sessions: {
-                    where: {
-                        startTime: {
-                            gte: startOfDay,
-                            lte: endOfDay,
-                        },
-                    },
                     orderBy: {
                         startTime: 'asc',
                     },
