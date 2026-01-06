@@ -94,220 +94,216 @@ export class TelegramService implements OnModuleInit {
 
             const state = this.userState.get(chatId);
 
-            if (text === BotButtons.BACK || text === BotButtons.CANCEL) {
-                const currentState = this.userState.get(chatId);
+            if (this.isNavigationCommand(text)) {
+                await this.handleNavigation(chatId, text, user);
+                return;
+            }
 
-                if (currentState === 'TaskActions') {
-                    this.userState.set(chatId, 'SelectingTask');
-                    const tasks = await this.userService.getTodayReport(user.id);
-                    if (!tasks.length) {
-                        this.userState.set(chatId, 'MainMenu');
-                        this.selectedTask.delete(chatId);
-                        await this.sendMainMenu(chatId);
-                        return;
+            switch (state) {
+                case 'AddingTaskName':
+                    await this.handleAddTask(chatId, text, user);
+                    break;
+                case 'SelectingTask':
+                    await this.handleSelectTask(chatId, text, user);
+                    break;
+                case 'TaskActions':
+                    await this.handleTaskActions(chatId, text, user);
+                    break;
+                case 'ConfirmStartNewTaskAfterEndingActive':
+                    await this.handleConfirmStartNewTask(chatId, text, user);
+                    break;
+                case 'EditingTaskName':
+                    await this.handleEditTaskName(chatId, text);
+                    break;
+                default:
+                    if (text === BotButtons.ADD_TASK) {
+                        await this.promptAddTaskName(chatId);
+                    } else if (text === BotButtons.TASK_LIST) {
+                        await this.showTaskList(chatId, user);
+                    } else if (text === BotButtons.TODAY_REPORT) {
+                        await this.sendReport(chatId, user.id);
                     }
-                    const keyboard = tasks.map(task => [{ text: task.name }]);
-                    keyboard.push([{ text: BotButtons.BACK }]);
-                    await this.bot.sendMessage(chatId, 'یک تسک انتخاب کن:', {
-                        reply_markup: { keyboard, resize_keyboard: true },
-                    });
-                    this.selectedTask.delete(chatId);
-                    return;
-                }
+                    break;
+            }
+        });
+    }
 
-                if (currentState === 'SelectingTask') {
-                    this.userState.set(chatId, 'MainMenu');
-                    this.selectedTask.delete(chatId);
-                    await this.sendMainMenu(chatId);
-                    return;
-                }
+    private isNavigationCommand(text: string) {
+        return text === BotButtons.BACK || text === BotButtons.CANCEL;
+    }
 
-                if (currentState === 'AddingTaskName' || currentState === 'EditingTaskName' || currentState === 'ConfirmStartNewTaskAfterEndingActive') {
-                    this.userState.set(chatId, 'MainMenu');
-                    this.selectedTask.delete(chatId);
-                    this.tempTaskName.delete(chatId);
-                    await this.sendMainMenu(chatId);
-                    return;
-                }
+    private async handleNavigation(chatId: number, text: string, user: any) {
+        const currentState = this.userState.get(chatId);
 
+        if (currentState === 'TaskActions') {
+            const tasks = await this.userService.getTodayReport(user.id);
+            if (!tasks.length) {
                 this.userState.set(chatId, 'MainMenu');
+                this.selectedTask.delete(chatId);
                 await this.sendMainMenu(chatId);
                 return;
             }
 
-            if (text === BotButtons.ADD_TASK) {
-                this.userState.set(chatId, 'AddingTaskName');
-                await this.bot.sendMessage(chatId, 'اسم تسک رو وارد کن 👇', {
-                    reply_markup: this.cancelKeyboard(),
-                });
-                return;
-            }
+            this.userState.set(chatId, 'SelectingTask');
+            this.selectedTask.delete(chatId);
 
-            if (state === 'AddingTaskName') {
-                const taskName = text;
-                this.tempTaskName.delete(chatId);
+            const keyboard = tasks.map(t => [{ text: t.name }]);
+            keyboard.push([{ text: BotButtons.BACK }]);
+            await this.bot.sendMessage(chatId, 'یک تسک انتخاب کن:', { reply_markup: { keyboard, resize_keyboard: true } });
+            return;
+        }
 
-                const task = await this.userService.getOrCreateTask(user.id, taskName);
+        if (['SelectingTask', 'AddingTaskName', 'EditingTaskName', 'ConfirmStartNewTaskAfterEndingActive'].includes(currentState)) {
+            this.userState.set(chatId, 'MainMenu');
+            this.selectedTask.delete(chatId);
+            this.tempTaskName.delete(chatId);
+            await this.sendMainMenu(chatId);
+            return;
+        }
 
-                this.selectedTask.set(chatId, task);
-                this.userState.set(chatId, 'TaskActions');
+        this.userState.set(chatId, 'MainMenu');
+        await this.sendMainMenu(chatId);
+    }
 
+    private async promptAddTaskName(chatId: number) {
+        this.userState.set(chatId, 'AddingTaskName');
+        await this.bot.sendMessage(chatId, 'اسم تسک رو وارد کن 👇', { reply_markup: this.cancelKeyboard() });
+    }
+
+    private async handleAddTask(chatId: number, text: string, user: any) {
+        const task = await this.userService.getOrCreateTask(user.id, text);
+        this.tempTaskName.delete(chatId);
+        this.selectedTask.set(chatId, task);
+        this.userState.set(chatId, 'TaskActions');
+
+        const keyboard: KeyboardButton[][] = [
+            [{ text: BotButtons.START_SELECTED_TASK }],
+            [{ text: BotButtons.BACK }],
+        ];
+
+        await this.bot.sendMessage(
+            chatId,
+            `✅ تسک «${task.name}» ثبت شد!\nمی‌خوای شروعش کنی یا برگردی؟`,
+            { reply_markup: { keyboard, resize_keyboard: true } }
+        );
+    }
+
+    private async showTaskList(chatId: number, user: any) {
+        const tasks = await this.userService.getTodayReport(user.id);
+        if (!tasks.length) {
+            await this.bot.sendMessage(chatId, 'هیچ تسکی ثبت نشده.');
+            return;
+        }
+
+        const keyboard = tasks.map(task => [{ text: task.name }]);
+        keyboard.push([{ text: BotButtons.BACK }]);
+
+        this.userState.set(chatId, 'SelectingTask');
+        await this.bot.sendMessage(chatId, 'یک تسک انتخاب کن:', { reply_markup: { keyboard, resize_keyboard: true } });
+    }
+
+    private async handleSelectTask(chatId: number, text: string, user: any) {
+        const tasks = await this.userService.getTodayReport(user.id);
+        const task = tasks.find(t => t.name === text);
+        if (!task) return;
+
+        this.selectedTask.set(chatId, task);
+        this.userState.set(chatId, 'TaskActions');
+        await this.sendTaskActionsMenu(chatId, task);
+    }
+
+    private async handleTaskActions(chatId: number, text: string, user: any) {
+        const task = this.selectedTask.get(chatId);
+        if (!task) return;
+
+        if (text === BotButtons.START_SELECTED_TASK) {
+            const active = await this.userService.getActiveSession(user.id);
+            if (active) {
                 const keyboard: KeyboardButton[][] = [
-                    [{ text: BotButtons.START_SELECTED_TASK }],
-                    [{ text: BotButtons.BACK }],
+                    [{ text: BotButtons.START_NEW_TASK_AFTER_ENDING_ACTIVE }],
+                    [{ text: BotButtons.CANCEL }],
                 ];
-
-                await this.bot.sendMessage(
-                    chatId,
-                    `✅ تسک «${task.name}» ثبت شد!\nمی‌خوای شروعش کنی یا برگردی؟`,
+                await this.bot.sendMessage(chatId,
+                    `⛔ ابتدا یک تسک فعال دارید: ${active.task.name}\nمی‌خواید اون رو پایان بدیم و این تسک رو شروع کنیم؟`,
                     { reply_markup: { keyboard, resize_keyboard: true } }
                 );
+                this.userState.set(chatId, 'ConfirmStartNewTaskAfterEndingActive');
                 return;
             }
 
-            if (text === BotButtons.TASK_LIST) {
-                const tasks = await this.userService.getTodayReport(user.id);
-                if (!tasks.length) {
-                    await this.bot.sendMessage(chatId, 'هیچ تسکی ثبت نشده.');
-                    return;
-                }
-
-                const keyboard = tasks.map(task => [{ text: task.name }]);
-                keyboard.push([{ text: BotButtons.BACK }]);
-
-                this.userState.set(chatId, 'SelectingTask');
-                await this.bot.sendMessage(chatId, 'یک تسک انتخاب کن:', {
-                    reply_markup: { keyboard, resize_keyboard: true },
-                });
+            if (this.isOutsideWorkingHours()) {
+                await this.bot.sendMessage(chatId, '⏰ خارج از ساعات مجاز کاری هست.');
                 return;
             }
 
-            if (state === 'SelectingTask') {
-                const tasks = await this.userService.getTodayReport(user.id);
-                const task = tasks.find(task => task.name === text);
-                if (!task) return;
+            await this.userService.startTask(user.id, task);
+            this.userState.set(chatId, 'MainMenu');
+            this.selectedTask.delete(chatId);
+            await this.sendMainMenu(chatId, '🕒 تسک شروع شد.');
+            return;
+        }
 
-                this.selectedTask.set(chatId, task);
-                this.userState.set(chatId, 'TaskActions');
-                await this.sendTaskActionsMenu(chatId, task);
+        if (text === BotButtons.END_SELECTED_TASK) {
+            const active = await this.userService.getActiveSession(user.id);
+            if (!active || active.taskId !== task.id) {
+                await this.bot.sendMessage(chatId, '⚠️ این تسک در حال اجرا نیست.');
                 return;
             }
+            await this.userService.endTask(user.id);
+            this.userState.set(chatId, 'MainMenu');
+            this.selectedTask.delete(chatId);
+            await this.sendMainMenu(chatId, `⏹️ تسک «${task.name}» پایان یافت.`);
+            return;
+        }
 
-            if (state === 'TaskActions' && text === BotButtons.START_SELECTED_TASK) {
-                const task = this.selectedTask.get(chatId);
-                if (!task) return;
-
-                const active = await this.userService.getActiveSession(user.id);
-
-                if (active) {
-                    const keyboard: KeyboardButton[][] = [
-                        [{ text: BotButtons.START_NEW_TASK_AFTER_ENDING_ACTIVE }],
-                        [{ text: BotButtons.CANCEL }],
-                    ];
-
-                    await this.bot.sendMessage(
-                        chatId,
-                        `⛔ ابتدا یک تسک فعال دارید: ${active.task.name}\nمی‌خواید اون رو پایان بدیم و این تسک رو شروع کنیم؟`,
-                        { reply_markup: { keyboard, resize_keyboard: true } }
-                    );
-
-                    this.userState.set(chatId, 'ConfirmStartNewTaskAfterEndingActive');
-                    return;
-                }
-
-                if (this.isOutsideWorkingHours()) {
-                    await this.bot.sendMessage(chatId, '⏰ خارج از ساعات مجاز کاری هست.');
-                    return;
-                }
-
-                await this.userService.startTask(user.id, task);
-                this.userState.set(chatId, 'MainMenu');
-                this.selectedTask.delete(chatId);
-                await this.sendMainMenu(chatId, '🕒 تسک شروع شد.');
+        if (text === BotButtons.DELETE_SELECTED_TASK) {
+            const active = await this.userService.getActiveSession(user.id);
+            if (active && active.taskId === task.id) {
+                await this.bot.sendMessage(chatId, `⛔ تسک «${task.name}» فعاله و نمی‌شه حذفش کرد.`);
                 return;
             }
+            await this.userService.deleteTask(task.id);
+            this.userState.set(chatId, 'MainMenu');
+            this.selectedTask.delete(chatId);
+            await this.sendMainMenu(chatId, '🗑 تسک حذف شد.');
+            return;
+        }
 
-            if (state === 'ConfirmStartNewTaskAfterEndingActive') {
-                if (text === BotButtons.START_NEW_TASK_AFTER_ENDING_ACTIVE) {
-                    const task = this.selectedTask.get(chatId);
-                    if (!task) return;
+        if (text === BotButtons.EDIT_TASK) {
+            this.userState.set(chatId, 'EditingTaskName');
+            await this.bot.sendMessage(chatId, '✏️ اسم جدید تسک رو وارد کن 👇', { reply_markup: this.cancelKeyboard() });
+            return;
+        }
+    }
 
-                    const active = await this.userService.getActiveSession(user.id);
-                    if (active) await this.userService.endTask(user.id);
+    private async handleConfirmStartNewTask(chatId: number, text: string, user: any) {
+        const task = this.selectedTask.get(chatId);
+        if (!task) return;
 
-                    await this.userService.startTask(user.id, task);
-                    this.userState.set(chatId, 'MainMenu');
-                    this.selectedTask.delete(chatId);
+        if (text === BotButtons.START_NEW_TASK_AFTER_ENDING_ACTIVE) {
+            const active = await this.userService.getActiveSession(user.id);
+            if (active) await this.userService.endTask(user.id);
 
-                    await this.sendMainMenu(chatId, `⏹️ تسک قبلی پایان یافت و تسک «${task.name}» شروع شد.`);
-                    return;
-                }
+            await this.userService.startTask(user.id, task);
+            this.userState.set(chatId, 'MainMenu');
+            this.selectedTask.delete(chatId);
 
-                if (text === BotButtons.CANCEL) {
-                    this.userState.set(chatId, 'MainMenu');
-                    this.selectedTask.delete(chatId);
-                    await this.sendMainMenu(chatId);
-                    return;
-                }
-            }
+            await this.sendMainMenu(chatId, `⏹️ تسک قبلی پایان یافت و تسک «${task.name}» شروع شد.`);
+        }
 
-            if (state === 'TaskActions') {
-                const task = this.selectedTask.get(chatId);
-                if (!task) return;
+        if (text === BotButtons.CANCEL) {
+            this.userState.set(chatId, 'MainMenu');
+            this.selectedTask.delete(chatId);
+            await this.sendMainMenu(chatId);
+        }
+    }
 
-                if (text === BotButtons.END_SELECTED_TASK) {
-                    const active = await this.userService.getActiveSession(user.id);
-                    if (!active || active.taskId !== task.id) {
-                        await this.bot.sendMessage(chatId, '⚠️ این تسک در حال اجرا نیست.');
-                        return;
-                    }
+    private async handleEditTaskName(chatId: number, text: string) {
+        const task = this.selectedTask.get(chatId);
+        if (!task) return;
 
-                    await this.userService.endTask(user.id);
-                    this.userState.set(chatId, 'MainMenu');
-                    this.selectedTask.delete(chatId);
-                    await this.sendMainMenu(chatId, `⏹️ تسک «${task.name}» پایان یافت.`);
-                    return;
-                }
-
-                if (text === BotButtons.DELETE_SELECTED_TASK) {
-                    const active = await this.userService.getActiveSession(user.id);
-                    if (active && active.taskId === task.id) {
-                        await this.bot.sendMessage(chatId, `⛔ تسک «${task.name}» فعاله و نمی‌شه حذفش کرد.`);
-                        return;
-                    }
-
-                    await this.userService.deleteTask(task.id);
-                    this.userState.set(chatId, 'MainMenu');
-                    this.selectedTask.delete(chatId);
-                    await this.sendMainMenu(chatId, '🗑 تسک حذف شد.');
-                    return;
-                }
-
-                if (text === BotButtons.EDIT_TASK) {
-                    this.userState.set(chatId, 'EditingTaskName');
-                    await this.bot.sendMessage(chatId, '✏️ اسم جدید تسک رو وارد کن 👇', {
-                        reply_markup: this.cancelKeyboard()
-                    });
-                    return;
-                }
-            }
-
-            if (state === 'EditingTaskName') {
-                const task = this.selectedTask.get(chatId);
-                if (!task) return;
-
-                task._newName = text;
-                await this.bot.sendMessage(chatId, '✅ تغییرات ذخیره شد', {
-                    reply_markup: this.cancelKeyboard()
-                });
-                return;
-            }
-
-            if (text === BotButtons.TODAY_REPORT) {
-                await this.sendReport(chatId, user.id);
-                return;
-            }
-        });
+        task._newName = text;
+        await this.bot.sendMessage(chatId, '✅ تغییرات ذخیره شد', { reply_markup: this.cancelKeyboard() });
     }
 
     private async sendReport(chatId: number, userId: number, isAutomate: boolean = false) {
