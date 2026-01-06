@@ -317,17 +317,24 @@ export class TelegramService implements OnModuleInit {
         }
 
         let reportText = isAutomate ? '📊 (خودکار) گزارش امروز:\n' : '📊 گزارش امروز:\n';
-
         let totalDayMinutes = 0;
 
+        // Separate active task
+        const activeTaskIndex = tasks.findIndex(t =>
+            t.sessions.some(s => !s.endTime)
+        );
+        let activeTask;
+        if (activeTaskIndex !== -1) {
+            activeTask = tasks.splice(activeTaskIndex, 1)[0];
+        }
+
+        // Inactive tasks first
         for (const task of tasks) {
             let taskMinutes = 0;
-
             reportText += `\n📌 ${task.name} (کد: ${task.code})\n`;
 
             for (const session of task.sessions) {
                 const start = this.timeService.formatIranTime(session.startTime);
-
                 let end: string;
                 let sessionDuration = 0;
 
@@ -335,20 +342,46 @@ export class TelegramService implements OnModuleInit {
                     end = this.timeService.formatIranTime(session.endTime);
                     sessionDuration = session.duration ?? 0;
                 } else {
-                    end = '⏳';
+                    end = 'اکنون';
                     sessionDuration = this.timeService.diffMinutes(session.startTime, this.timeService.nowUTC());
                 }
 
-                reportText += `⏱ ${start} تا ${end}\n`;
+                reportText += `   ⏱ ${end} ← ${start}\n`;
                 taskMinutes += sessionDuration;
             }
 
             totalDayMinutes += taskMinutes;
-            reportText += `🧮 مجموع این تسک: ${this.formatMinutes(taskMinutes)}\n`;
+            reportText += `   🧮 مجموع: ${this.formatMinutes(taskMinutes)}\n`;
+        }
+
+        // Add current active task to the end of the text
+        if (activeTask) {
+            let taskMinutes = 0;
+            reportText += `\n📌 ${activeTask.name} (کد: ${activeTask.code}) 🔹 در جریان\n`;
+
+            for (const session of activeTask.sessions) {
+                const start = this.timeService.formatIranTime(session.startTime);
+                let end: string;
+                let sessionDuration = 0;
+
+                if (session.endTime) {
+                    end = this.timeService.formatIranTime(session.endTime);
+                    sessionDuration = session.duration ?? 0;
+                } else {
+                    end = 'اکنون';
+                    sessionDuration = this.timeService.diffMinutes(session.startTime, this.timeService.nowUTC());
+                }
+
+                reportText += `   ⏱ ${end} ← ${start}\n`;
+                taskMinutes += sessionDuration;
+            }
+
+            totalDayMinutes += taskMinutes;
+            reportText += `   🧮 مجموع: ${this.formatMinutes(taskMinutes)}\n`;
         }
 
         reportText += `\n━━━━━━━━━━━━━━\n`;
-        reportText += `🟢 جمع کل کارکرد امروز: ${this.formatMinutes(totalDayMinutes)}\n`;
+        reportText += `🟢 جمع کل امروز: ${this.formatMinutes(totalDayMinutes)}\n`;
 
         await this.bot.sendMessage(chatId, reportText);
     }
