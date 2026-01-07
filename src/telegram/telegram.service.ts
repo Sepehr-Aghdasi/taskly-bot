@@ -23,7 +23,7 @@ export class TelegramService implements OnModuleInit {
 
         this.handleStart();
         this.handleMessages();
-        this.handleCallbacks(); // Only need for canceling the add task => inline keyboard button.
+        this.handleCallbacks(); // Only need for canceling the add task or editing task name => inline keyboard button.
     }
 
     private async sendMainMenu(chatId: number, text = "منوی اصلی") {
@@ -63,9 +63,7 @@ export class TelegramService implements OnModuleInit {
     }
 
     private handleStart() {
-        this.bot.onText(/\/start/, async (msg) => {
-            this.performStart(msg);
-        });
+        this.bot.onText(/\/start/, async (msg) => this.performStart(msg));
     }
 
     private async performStart(message: TelegramBot.Message) {
@@ -332,8 +330,7 @@ export class TelegramService implements OnModuleInit {
         }
 
         if (text === BotButtons.EDIT_TASK) {
-            this.userState.set(chatId, 'EditingTaskName');
-            await this.bot.sendMessage(chatId, '✏️ اسم جدید تسک رو وارد کن 👇', { reply_markup: this.cancelKeyboard() });
+            await this.promptEditTaskName(chatId);
             return;
         }
     }
@@ -360,12 +357,48 @@ export class TelegramService implements OnModuleInit {
         }
     }
 
+    private async promptEditTaskName(chatId: number) {
+        const task = this.selectedTask.get(chatId);
+        if (!task) return;
+
+        this.userState.set(chatId, 'EditingTaskName');
+
+        await this.bot.sendMessage(chatId, '✏️ اسم جدید تسک رو وارد کن 👇', { reply_markup: { remove_keyboard: true } });
+
+        const cancelMsg = await this.bot.sendMessage(chatId, 'برای لغو می‌تونی از این استفاده کنی:', {
+            reply_markup: { inline_keyboard: [[{ text: BotButtons.CANCEL, callback_data: BotButtons.CANCEL }]] }
+        });
+
+        this.cancelMessageIds.set(chatId, cancelMsg.message_id);
+    }
+
     private async handleEditTaskName(chatId: number, text: string) {
         const task = this.selectedTask.get(chatId);
         if (!task) return;
 
         task._newName = text;
-        await this.bot.sendMessage(chatId, '✅ تغییرات ذخیره شد', { reply_markup: this.cancelKeyboard() });
+
+        const cancelMessageId = this.cancelMessageIds.get(chatId);
+        if (cancelMessageId) {
+            await this.bot.editMessageReplyMarkup(
+                { inline_keyboard: [] },
+                { chat_id: chatId, message_id: cancelMessageId }
+            );
+            this.cancelMessageIds.delete(chatId);
+        }
+
+        await this.userService.updateTask(task.id, text);
+
+        const keyboard = [
+            [{ text: BotButtons.START_SELECTED_TASK }],
+            [{ text: BotButtons.BACK }]
+        ];
+
+        await this.bot.sendMessage(chatId, `✅ تغییرات ذخیره شد\nنام جدید: ${text}`,
+            { reply_markup: { keyboard, resize_keyboard: true } }
+        );
+
+        this.userState.set(chatId, 'TaskActions');
     }
 
     private async sendReport(chatId: number, userId: number, isAutomate: boolean = false) {
