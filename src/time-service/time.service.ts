@@ -31,26 +31,20 @@ export class TimeService {
 
     // Difference in minutes based on Iran time
     diffMinutes(from: Date, to: Date): number {
-        const fromIran = new Date(
-            from.toLocaleString('en-US', { timeZone: this.IRAN_TZ })
-        );
-
-        const toIran = new Date(
-            to.toLocaleString('en-US', { timeZone: this.IRAN_TZ })
-        );
-
-        return Math.floor((toIran.getTime() - fromIran.getTime()) / 60000);
+        const msDiff = to.getTime() - from.getTime();
+        return Math.round(msDiff / 60000);
     }
 
     getIranDayRange() {
         const now = new Date();
 
         // Get Iran time parts safely
-        const iranDateParts = new Intl.DateTimeFormat('en-GB', {
+        const iranDateParts = new Intl.DateTimeFormat('en-US', {
             timeZone: 'Asia/Tehran',
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
+            hour12: false,
         }).formatToParts(now);
 
         const year = Number(iranDateParts.find(p => p.type === 'year')!.value);
