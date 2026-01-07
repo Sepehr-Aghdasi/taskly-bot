@@ -403,7 +403,7 @@ export class TelegramService implements OnModuleInit {
                     sessionDuration = this.timeService.diffMinutes(session.startTime, this.timeService.nowUTC());
                 }
 
-                reportText += `   ⏱ ${end} تا ${start}\n`;
+                reportText += `   ⏱ ${start} تا ${end}\n`;
                 taskMinutes += sessionDuration;
             }
 
@@ -429,7 +429,7 @@ export class TelegramService implements OnModuleInit {
                     sessionDuration = this.timeService.diffMinutes(session.startTime, this.timeService.nowUTC());
                 }
 
-                reportText += `   ⏱ ${end} تا ${start}\n`;
+                reportText += `   ⏱ ${start} تا ${end}\n`;
                 taskMinutes += sessionDuration;
             }
 
