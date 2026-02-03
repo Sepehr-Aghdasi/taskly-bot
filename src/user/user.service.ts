@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Task, UserSettings } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { TimeService } from 'src/time-service/time.service';
+import { UpdateUserSettingsDto } from './dto/update-user-settings.dto';
 import { CreateOrUpdateUserDto } from './dto/create-or-update-user.dto';
 
 @Injectable()
@@ -51,7 +52,7 @@ export class UserService {
         });
     }
 
-    async updateUserSettings(userId: number, settings: Partial<{ reminder: boolean }>): Promise<UserSettings> {
+    async updateUserSettings(userId: number, settings: Partial<UpdateUserSettingsDto>): Promise<UserSettings> {
         const existing = await this.prisma.userSettings.findUnique({
             where: { userId },
         });
