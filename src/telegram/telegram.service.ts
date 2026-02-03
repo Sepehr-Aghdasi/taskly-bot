@@ -12,7 +12,7 @@ export class TelegramService implements OnModuleInit {
     private bot: TelegramBot;
     private userState = new Map<number, UserState>();
     private cancelMessageIds = new Map<number, number>();
-    private selectedTask = new Map<number, any>();
+    private selectedTask = new Map<number, Task>();
 
     constructor(
         private readonly userService: UserService,
@@ -387,8 +387,6 @@ export class TelegramService implements OnModuleInit {
         const task = this.selectedTask.get(chatId);
         if (!task) return;
 
-        task._newName = text;
-
         const cancelMessageId = this.cancelMessageIds.get(chatId);
         if (cancelMessageId) {
             await this.bot.editMessageReplyMarkup(
@@ -398,10 +396,20 @@ export class TelegramService implements OnModuleInit {
             this.cancelMessageIds.delete(chatId);
         }
 
-        await this.userService.updateTask(task.id, text);
+        // Update task in DB
+        const updatedTask = await this.userService.updateTask(task.id, text);
+
+        // Update the selectedTask map
+        this.selectedTask.set(chatId, { ...updatedTask, name: updatedTask.name });
+
+        // Check if task is currently active
+        const activeSession = await this.userService.getActiveSession(task.userId);
+        const startOrEndButton = activeSession?.taskId === task.id
+            ? BotButtons.END_SELECTED_TASK
+            : BotButtons.START_SELECTED_TASK;
 
         const keyboard = [
-            [{ text: BotButtons.START_SELECTED_TASK }],
+            [{ text: startOrEndButton }],
             [{ text: BotButtons.BACK }]
         ];
 
