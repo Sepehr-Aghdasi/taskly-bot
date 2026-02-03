@@ -3,6 +3,7 @@ export enum BotButtons {
     ADD_TASK = "➕ افزودن تسک",
     TASK_LIST = "📋 لیست تسک‌ها",
     TODAY_REPORT = "📊 گزارش روزانه",
+    SETTINGS = "⚙️ تنظیمات",
 
     // ===== Task Actions =====
     START_SELECTED_TASK = "▶️ شروع تسک",
@@ -15,4 +16,10 @@ export enum BotButtons {
     CANCEL = "❌ انصراف",
 
     START_NEW_TASK_AFTER_ENDING_ACTIVE = "🔄 پایان تسک قبلی و شروع تسک جدید"
+}
+
+export enum UserSettingsButtons {
+    REMINDER = "🔔 یادآوری",
+
+    BACK = "🔙 برگشت"
 }

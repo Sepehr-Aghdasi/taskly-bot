@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Task } from '@prisma/client';
+import { Task, UserSettings } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { TimeService } from 'src/time-service/time.service';
 import { CreateOrUpdateUserDto } from './dto/create-or-update-user.dto';
@@ -13,40 +13,64 @@ export class UserService {
     ) { }
 
     async getAllUsers() {
-        return this.prisma.user.findMany();
+        return this.prisma.user.findMany({ include: { userSetting: true } });
     }
 
     async getOrCreateUser(telegramId: string, data?: CreateOrUpdateUserDto) {
-        let user = await this.prisma.user.findUnique({
+        const user = await this.prisma.user.upsert({
             where: { telegramId },
-        });
-
-        if (!user) {
-            user = await this.prisma.user.create({
-                data: {
-                    telegramId,
-                    username: data?.username,
-                    firstName: data?.firstName,
-                    lastName: data?.lastName,
+            create: {
+                telegramId,
+                username: data?.username,
+                firstName: data?.firstName,
+                lastName: data?.lastName,
+                userSetting: {
+                    create: { reminder: true },
                 },
-            });
-        } else {
-            if (!user.firstName || !user.lastName) {
-                user = await this.prisma.user.update({
-                    where: { telegramId },
-                    data: {
-                        firstName: user.firstName ?? data?.firstName,
-                        lastName: user.lastName ?? data?.lastName,
-                    },
-                });
-            }
-        }
+            },
+            update: {
+                firstName: data?.firstName ?? undefined,
+                lastName: data?.lastName ?? undefined,
+            },
+            include: { userSetting: true },
+        });
 
         return user;
     }
 
     async findByTelegramId(telegramId: string) {
-        return this.prisma.user.findUnique({ where: { telegramId } });
+        return this.prisma.user.findUnique({
+            where: { telegramId },
+            include: { userSetting: true },
+        });
+    }
+
+    async getUserSettings(userId: number) {
+        return this.prisma.userSettings.findUnique({
+            where: { userId }
+        });
+    }
+
+    async updateUserSettings(userId: number, settings: Partial<{ reminder: boolean }>): Promise<UserSettings> {
+        const existing = await this.prisma.userSettings.findUnique({
+            where: { userId },
+        });
+
+        if (!existing) {
+            return this.prisma.userSettings.create({
+                data: {
+                    userId,
+                    ...settings,
+                },
+            });
+        }
+
+        return this.prisma.userSettings.update({
+            where: { userId },
+            data: {
+                ...settings,
+            },
+        });
     }
 
     async getOrCreateTask(userId: number, name: string) {

@@ -17,6 +17,19 @@ model User {
   createdAt  DateTime @default(now())
 
   tasks Task[]
+
+  userSetting UserSettings?
+}
+
+model UserSettings {
+  id Int @id @default(autoincrement())
+
+  reminder  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int  @unique
 }
 
 model Task {

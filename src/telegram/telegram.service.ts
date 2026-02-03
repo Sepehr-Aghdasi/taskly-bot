@@ -3,8 +3,9 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import TelegramBot, { KeyboardButton } from 'node-telegram-bot-api';
 import { UserService } from 'src/user/user.service';
 import { UserState } from 'src/shared/user-state.type';
-import { BotButtons } from 'src/shared/bot-buttons.enum';
 import { TimeService } from 'src/time-service/time.service';
+import { WELCOME_MESSAGE } from 'src/shared/messages/welcome-message';
+import { BotButtons, UserSettingsButtons } from 'src/shared/bot-buttons.enum';
 
 @Injectable()
 export class TelegramService implements OnModuleInit {
@@ -31,6 +32,7 @@ export class TelegramService implements OnModuleInit {
             [{ text: BotButtons.ADD_TASK }],
             [{ text: BotButtons.TASK_LIST }],
             [{ text: BotButtons.TODAY_REPORT }],
+            [{ text: BotButtons.SETTINGS }],
         ];
 
         await this.bot.sendMessage(chatId, text, {
@@ -80,6 +82,7 @@ export class TelegramService implements OnModuleInit {
 
         this.userState.set(chatId, 'MainMenu');
         await this.sendMainMenu(chatId, `سلام ${user.firstName || 'دوست من'} 👋`);
+        await this.bot.sendMessage(chatId, WELCOME_MESSAGE, { parse_mode: 'Markdown' });
     }
 
     private handleMessages() {
@@ -117,13 +120,21 @@ export class TelegramService implements OnModuleInit {
                 case 'EditingTaskName':
                     await this.handleEditTaskName(chatId, text);
                     break;
+                case 'SettingsMenu':
+                    if (text.startsWith(UserSettingsButtons.REMINDER)) {
+                        this.toggleReminder(user.id, chatId);
+                    }
+
                 default:
+                case 'MainMenu':
                     if (text === BotButtons.ADD_TASK) {
                         await this.promptAddTaskName(chatId);
                     } else if (text === BotButtons.TASK_LIST) {
-                        await this.showTaskList(chatId, user);
+                        await this.showTaskList(chatId, user.id);
                     } else if (text === BotButtons.TODAY_REPORT) {
                         await this.sendReport(chatId, user.id);
+                    } else if (text === BotButtons.SETTINGS) {
+                        this.showSettingsMenu(chatId, user.id);
                     }
                     break;
             }
@@ -248,8 +259,8 @@ export class TelegramService implements OnModuleInit {
         );
     }
 
-    private async showTaskList(chatId: number, user: User) {
-        const tasks = await this.userService.getTodayReport(user.id);
+    private async showTaskList(chatId: number, userId: number) {
+        const tasks = await this.userService.getTodayReport(userId);
         if (!tasks.length) {
             await this.bot.sendMessage(chatId, 'هیچ تسکی ثبت نشده.');
             return;
@@ -476,10 +487,47 @@ export class TelegramService implements OnModuleInit {
         await this.bot.sendMessage(chatId, reportText);
     }
 
+    private async showSettingsMenu(chatId: number, userId: number) {
+        const userSetting = await this.userService.getUserSettings(userId);
+
+        const reminderStatus = userSetting?.reminder ? "✅" : "❌";
+
+        const settingsKeyboard = [
+            [{ text: `${UserSettingsButtons.REMINDER} (${reminderStatus})` }],
+            [{ text: BotButtons.BACK }]
+        ];
+
+        this.userState.set(chatId, 'SettingsMenu');
+
+        await this.bot.sendMessage(chatId, "⚙️ تنظیمات شما:", {
+            reply_markup: {
+                keyboard: settingsKeyboard,
+                resize_keyboard: true,
+                one_time_keyboard: true,
+            },
+        });
+    }
+
+    private async toggleReminder(userId: number, chatId: number) {
+        const settings = await this.userService.getUserSettings(userId);
+        const newReminder = !settings.reminder;
+
+        await this.userService.updateUserSettings(userId, { reminder: newReminder });
+
+        const statusText = newReminder ? "✅ روشن شد" : "❌ خاموش شد";
+        await this.bot.sendMessage(chatId, `${UserSettingsButtons.REMINDER} ${statusText}`);
+
+        this.userState.set(chatId, 'MainMenu');
+        await this.sendMainMenu(chatId);
+    }
+
     async scheduleDailyReport() {
         const users = await this.userService.getAllUsers();
 
         for (const user of users) {
+            const reminder = user.userSetting.reminder;
+            if (!reminder) continue;
+
             const chatId = Number(user.telegramId);
 
             await this.sendReport(chatId, user.id, true);
@@ -500,13 +548,6 @@ export class TelegramService implements OnModuleInit {
                 `⏹️ تسک «${session.taskName}» به‌صورت خودکار پایان یافت.`
             );
         }
-    }
-
-    private cancelKeyboard() {
-        return {
-            keyboard: [[{ text: BotButtons.CANCEL }]],
-            resize_keyboard: true,
-        };
     }
 
     private isOutsideWorkingHours(): boolean {
