@@ -33,10 +33,11 @@ model UserSettings {
 }
 
 model Task {
-  id        Int      @id @default(autoincrement())
-  name      String
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
+  id     Int    @id @default(autoincrement())
+  name   String
+  userId Int
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -44,8 +45,9 @@ model Task {
 }
 
 model TaskSession {
-  id        Int       @id @default(autoincrement())
-  taskId    Int
+  id     Int @id @default(autoincrement())
+  taskId Int
+
   task      Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
   startTime DateTime  @default(now())
   endTime   DateTime?
