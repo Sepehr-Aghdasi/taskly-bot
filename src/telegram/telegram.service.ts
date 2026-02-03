@@ -4,6 +4,7 @@ import TelegramBot, { KeyboardButton } from 'node-telegram-bot-api';
 import { UserService } from 'src/user/user.service';
 import { UserState } from 'src/shared/user-state.type';
 import { TimeService } from 'src/time-service/time.service';
+import { WELCOME_MESSAGE } from 'src/shared/messages/welcome-message';
 import { BotButtons, UserSettingsButtons } from 'src/shared/bot-buttons.enum';
 
 @Injectable()
@@ -81,6 +82,7 @@ export class TelegramService implements OnModuleInit {
 
         this.userState.set(chatId, 'MainMenu');
         await this.sendMainMenu(chatId, `سلام ${user.firstName || 'دوست من'} 👋`);
+        await this.bot.sendMessage(chatId, WELCOME_MESSAGE, { parse_mode: 'Markdown' });
     }
 
     private handleMessages() {
