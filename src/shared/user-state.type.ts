@@ -4,4 +4,5 @@ export type UserState =
     | "SelectingTask"
     | "ConfirmStartNewTaskAfterEndingActive"
     | "TaskActions"
-    | "EditingTaskName";
+    | "EditingTaskName"
+    | "SettingsMenu";
