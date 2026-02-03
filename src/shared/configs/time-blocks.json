@@ -1,0 +1,72 @@
+[
+    {
+        "type": "Focus",
+        "startTime": "08:00:00",
+        "endTime": "09:00:00"
+    },
+    {
+        "type": "Break",
+        "startTime": "09:00:00",
+        "endTime": "09:15:00"
+    },
+    {
+        "type": "Focus",
+        "startTime": "09:15:00",
+        "endTime": "11:00:00"
+    },
+    {
+        "type": "Break",
+        "startTime": "11:00:00",
+        "endTime": "11:15:00"
+    },
+    {
+        "type": "Focus",
+        "startTime": "11:15:00",
+        "endTime": "13:00:00"
+    },
+    {
+        "type": "Half",
+        "startTime": "13:00:00",
+        "endTime": "14:00:00"
+    },
+    {
+        "type": "Focus",
+        "startTime": "14:00:00",
+        "endTime": "15:00:00"
+    },
+    {
+        "type": "Break",
+        "startTime": "15:00:00",
+        "endTime": "15:15:00"
+    },
+    {
+        "type": "Focus",
+        "startTime": "15:15:00",
+        "endTime": "16:45:00"
+    },
+    {
+        "type": "Break",
+        "startTime": "16:45:00",
+        "endTime": "17:00:00"
+    },
+    {
+        "type": "Focus",
+        "startTime": "17:00:00",
+        "endTime": "18:00:00"
+    },
+    {
+        "type": "Break",
+        "startTime": "18:00:00",
+        "endTime": "18:15:00"
+    },
+    {
+        "type": "Focus",
+        "startTime": "18:15:00",
+        "endTime": "19:00:00"
+    },
+    {
+        "type": "End",
+        "startTime": "19:00:00",
+        "endTime": "08:00:00"
+    }
+]

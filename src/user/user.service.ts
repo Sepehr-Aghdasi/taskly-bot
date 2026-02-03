@@ -216,4 +216,15 @@ export class UserService {
 
         return { task, alreadyExists: false };
     }
+
+    async getAllUsersWithFocusAlertsEnabled() {
+        return this.prisma.user.findMany({
+            where: {
+                userSetting: {
+                    focusAlerts: true,
+                },
+            }
+        });
+    }
+
 }
