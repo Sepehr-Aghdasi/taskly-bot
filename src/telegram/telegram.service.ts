@@ -84,6 +84,8 @@ export class TelegramService implements OnModuleInit {
         this.userState.set(chatId, 'MainMenu');
         await this.sendMainMenu(chatId, `سلام ${user.firstName || 'دوست من'} 👋`);
         await this.bot.sendMessage(chatId, WELCOME_MESSAGE, { parse_mode: 'Markdown' });
+
+        return user;
     }
 
     private handleMessages() {
@@ -92,9 +94,9 @@ export class TelegramService implements OnModuleInit {
             const text = msg.text;
             if (!text) return;
 
-            const user = await this.userService.findByTelegramId(msg.from.id.toString());
+            let user = await this.userService.findByTelegramId(msg.from.id.toString());
             if (!user) {
-                await this.performStart(msg);
+                user = await this.performStart(msg);
             }
 
             const state = this.userState.get(chatId);
