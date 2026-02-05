@@ -1,98 +1,175 @@
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+  <a href="https://nestjs.com/" target="_blank">
+    <img src="https://nestjs.com/img/logo-small.svg" width="120" alt="NestJS Logo" />
+  </a>
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+<h1 align="center">Taskly Bot 🤖</h1>
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+<p align="center">
+A Telegram bot built with <strong>NestJS</strong> to help you manage tasks, track focus time, and receive smart reminders.
 </p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🚀 Overview
 
-## Project setup
+**Taskly Bot** is a productivity-focused Telegram bot that helps users:
 
-```bash
-$ npm install
+- Manage daily tasks
+- Track working sessions
+- Receive focus / break / half-time notifications
+- View daily activity reports
+- Control reminders through user settings
+
+The bot is built with a **modular NestJS structure** and uses **config-driven scheduling** for time-based notifications.
+
+---
+
+## ✨ Features
+
+### 📝 Task Management
+- Add, edit, and delete tasks
+- Start and end task sessions
+- Prevent multiple active tasks at the same time
+
+### ⏱ Time Tracking
+- Track working sessions per task
+- Automatically calculate duration
+- Force-close active sessions at the end of the day
+
+### 📊 Reports
+- Daily task report
+- Session breakdown per task
+- Total working time per day
+
+### 🔔 Smart Notifications
+- Daily reminders
+- Focus / Break / Half-time alerts (configurable)
+- User-controlled settings (on/off)
+
+### ⚙️ User Settings
+- Enable / disable reminders
+- Enable / disable focus time alerts
+- Designed for future extensibility
+
+---
+
+## 🧠 Focus & Time Blocks
+
+Taskly supports **automatic time-block notifications** such as:
+
+- 🎯 Focus Time
+- ☕ Break Time
+
+Defined using a JSON configuration file and scheduled automatically.
+
+Example:
+
+```json
+[
+  {
+    "type": "Focus",
+    "startTime": "08:00:00",
+    "endTime": "09:00:00"
+  },
+  {
+    "type": "Break",
+    "startTime": "09:00:00",
+    "endTime": "09:15:00"
+  }
+]
 ```
 
-## Compile and run the project
+## 🛠 Tech Stack
+
+- **NestJS**
+- **Telegram Bot API**
+- **Prisma ORM**
+- **PostgreSQL**
+- **node-cron**
+- **TypeScript**
+
+---
+
+## 🧪 Installation & Setup
+
+### 1️⃣ Clone the repository
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+git clone https://github.com/Sepehr-Aghdasi/taskly-bot.git
+cd taskly-bot
 ```
 
-## Run tests
+### 2️⃣ Install dependencies
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm install
 ```
 
-## Deployment
+### 3️⃣ Environment variables
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Create a **.env** file:
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+```
+DATABASE_URL=postgresql://user:password@localhost:5432/taskly
+TELEGRAM_TOKEN=your_telegram_bot_token
+```
+
+### 4️⃣ Database setup
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npx prisma generate
+npx prisma migrate dev --name init
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Optional: GUI to view database content
 
-## Resources
+```bash
+npx prisma studio
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+---
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## ▶️ Running the Bot
 
-## Support
+```bash
+npm run start:dev
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### Production
 
-## Stay in touch
+```bash
+npm run build
+npm run start:prod
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+---
 
-## License
+## 🤖 Bot Behavior
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- `/start` initializes the user
+- Button-based interactions for:
+  - Task creation
+  - Task list
+  - Daily report
+  - Settings
+- All interactions are handled through **inline keyboard buttons**
+
+---
+
+--- 
+
+## 📎 Project Links
+
+- [LinkedIn Post about Taskly Bot](https://www.linkedin.com/...)  
+- [Demo Video / Screenshots](https://...)  
+
+---
+
+## 🤝 Contributing
+
+Pull requests are welcome.
+Please keep commits clean and focused.
+
+<p align="center"> Built with ❤️ using NestJS </p>
