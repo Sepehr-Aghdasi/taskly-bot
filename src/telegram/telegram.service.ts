@@ -6,6 +6,7 @@ import { UserState } from 'src/shared/user-state.type';
 import { TimeService } from 'src/time-service/time.service';
 import { WELCOME_MESSAGE } from 'src/shared/messages/welcome-message';
 import { BotButtons, UserSettingsButtons } from 'src/shared/bot-buttons.enum';
+import { TimeBlock, TimeBlockType } from 'src/shared/configs/time-blocks.type';
 
 @Injectable()
 export class TelegramService implements OnModuleInit {
@@ -83,6 +84,8 @@ export class TelegramService implements OnModuleInit {
         this.userState.set(chatId, 'MainMenu');
         await this.sendMainMenu(chatId, `سلام ${user.firstName || 'دوست من'} 👋`);
         await this.bot.sendMessage(chatId, WELCOME_MESSAGE, { parse_mode: 'Markdown' });
+
+        return user;
     }
 
     private handleMessages() {
@@ -91,9 +94,9 @@ export class TelegramService implements OnModuleInit {
             const text = msg.text;
             if (!text) return;
 
-            const user = await this.userService.findByTelegramId(msg.from.id.toString());
+            let user = await this.userService.findByTelegramId(msg.from.id.toString());
             if (!user) {
-                await this.performStart(msg);
+                user = await this.performStart(msg);
             }
 
             const state = this.userState.get(chatId);
@@ -123,6 +126,8 @@ export class TelegramService implements OnModuleInit {
                 case 'SettingsMenu':
                     if (text.startsWith(UserSettingsButtons.REMINDER)) {
                         this.toggleReminder(user.id, chatId);
+                    } else if (text.startsWith(UserSettingsButtons.FOCUS_ALERTS)) {
+                        this.toggleFocusAlerts(user.id, chatId);
                     }
 
                 default:
@@ -499,9 +504,11 @@ export class TelegramService implements OnModuleInit {
         const userSetting = await this.userService.getUserSettings(userId);
 
         const reminderStatus = userSetting?.reminder ? "✅" : "❌";
+        const focusAlertsStatus = userSetting?.focusAlerts ? "✅" : "❌";
 
         const settingsKeyboard = [
             [{ text: `${UserSettingsButtons.REMINDER} (${reminderStatus})` }],
+            [{ text: `${UserSettingsButtons.FOCUS_ALERTS} (${focusAlertsStatus})` }],
             [{ text: BotButtons.BACK }]
         ];
 
@@ -529,6 +536,19 @@ export class TelegramService implements OnModuleInit {
         await this.sendMainMenu(chatId);
     }
 
+    private async toggleFocusAlerts(userId: number, chatId: number) {
+        const settings = await this.userService.getUserSettings(userId);
+        const newFocusAlerts = !settings.focusAlerts;
+
+        await this.userService.updateUserSettings(userId, { focusAlerts: newFocusAlerts });
+
+        const statusText = newFocusAlerts ? "✅ روشن شد" : "❌ خاموش شد";
+        await this.bot.sendMessage(chatId, `${UserSettingsButtons.FOCUS_ALERTS} ${statusText}`);
+
+        this.userState.set(chatId, 'MainMenu');
+        await this.sendMainMenu(chatId);
+    }
+
     async scheduleDailyReport() {
         const users = await this.userService.getAllUsers();
 
@@ -543,6 +563,22 @@ export class TelegramService implements OnModuleInit {
             await this.bot.sendMessage(
                 chatId,
                 '⏰ یادآوری دوستانه:\nاگه هنوز تسکی ثبت نکردی حتماً ثبتش کن 📌'
+            );
+        }
+    }
+
+    async sendTimeBlockNotification(block: TimeBlock) {
+        const users = await this.userService.getAllUsersWithFocusAlertsEnabled();
+
+        const messages: Record<TimeBlockType, string> = {
+            Focus: 'وقت فوکوس رسیده! 💪',
+            Break: 'وقت استراحت است! 😌',
+        };
+
+        for (const user of users) {
+            await this.bot.sendMessage(
+                user.telegramId,
+                messages[block.type]
             );
         }
     }

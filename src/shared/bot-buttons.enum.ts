@@ -20,6 +20,7 @@ export enum BotButtons {
 
 export enum UserSettingsButtons {
     REMINDER = "🔔 یادآوری",
+    FOCUS_ALERTS = "⏰ هشدار فوکوس",
 
     BACK = "🔙 برگشت"
 }
