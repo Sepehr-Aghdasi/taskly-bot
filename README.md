@@ -158,12 +158,10 @@ npm run start:prod
 
 ---
 
---- 
-
 ## 📎 Project Links
 
-- [LinkedIn Post about Taskly Bot](https://www.linkedin.com/...)  
-- [Demo Video / Screenshots](https://...)  
+- [LinkedIn Post about Taskly Bot]()
+- [Telegram Id]()
 
 ---
 
