@@ -161,7 +161,7 @@ npm run start:prod
 ## 📎 Project Links
 
 - [LinkedIn Post about Taskly Bot]()
-- [Telegram Id]()
+- [Telegram Id](https://t.me/Taskly_Tracker_Bot)
 
 ---
 
