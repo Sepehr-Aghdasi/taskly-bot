@@ -63,10 +63,5 @@
         "type": "Focus",
         "startTime": "18:15:00",
         "endTime": "19:00:00"
-    },
-    {
-        "type": "End",
-        "startTime": "19:00:00",
-        "endTime": "08:00:00"
     }
 ]
