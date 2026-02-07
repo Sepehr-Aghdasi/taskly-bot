@@ -6,7 +6,7 @@ import { UserState } from 'src/shared/user-state.type';
 import { TimeService } from 'src/time-service/time.service';
 import { WELCOME_MESSAGE } from 'src/shared/messages/welcome-message';
 import { BotButtons, UserSettingsButtons } from 'src/shared/bot-buttons.enum';
-import { TimeBlock, TimeBlockType } from 'src/shared/configs/time-blocks.type';
+import { TimeBlock, TimeBlockTypes } from 'src/shared/configs/time-blocks.type';
 
 @Injectable()
 export class TelegramService implements OnModuleInit {
@@ -570,9 +570,10 @@ export class TelegramService implements OnModuleInit {
     async sendTimeBlockNotification(block: TimeBlock) {
         const users = await this.userService.getAllUsersWithFocusAlertsEnabled();
 
-        const messages: Record<TimeBlockType, string> = {
+        const messages: Record<TimeBlockTypes, string> = {
             Focus: 'وقت فوکوس رسیده! 💪',
             Break: 'وقت استراحت است! 😌',
+            Half: 'وقت ناهاره! 🍽️',
         };
 
         for (const user of users) {

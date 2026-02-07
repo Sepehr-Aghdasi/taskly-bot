@@ -9,7 +9,7 @@ import { TelegramService } from 'src/telegram/telegram.service';
 @Injectable()
 export class TimeBlockSchedulerService implements OnModuleInit {
 
-    private timeBlocks: TimeBlock[];
+    private timeBlocks: TimeBlock[] = [];
 
     constructor(
         private readonly timeService: TimeService,
@@ -18,7 +18,6 @@ export class TimeBlockSchedulerService implements OnModuleInit {
 
     async onModuleInit() {
         await this.loadTimeBlocks();
-
         this.scheduleTimeBlocks();
     }
 
@@ -32,7 +31,7 @@ export class TimeBlockSchedulerService implements OnModuleInit {
         this.timeBlocks.forEach(block => {
             const [hour, minute] = block.startTime.split(':');
 
-            // Days of the week: Sunday 0 to Saturday 6 → Friday (5) excluded
+            // Days of the week: Sunday 0 to Saturday 6 → skip Friday (5)
             const cronExpression = `${minute} ${hour} * * 0-4,6`;
 
             cron.schedule(cronExpression, async () => {
@@ -42,7 +41,7 @@ export class TimeBlockSchedulerService implements OnModuleInit {
     }
 
     private async notifyUsers(block: TimeBlock) {
-        this.telegramService.sendTimeBlockNotification(block);
+        await this.telegramService.sendTimeBlockNotification(block);
     }
 
 }

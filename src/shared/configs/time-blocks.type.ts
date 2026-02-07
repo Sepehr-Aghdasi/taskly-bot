@@ -1,7 +1,7 @@
 export interface TimeBlock {
-    type: TimeBlockType;
+    type: TimeBlockTypes;
     startTime: string; // HH:MM:SS format
     endTime: string; // HH:MM:SS format
 }
 
-export type TimeBlockType = "Break" | "Focus";
+export type TimeBlockTypes = "Break" | "Focus" | "Half";
