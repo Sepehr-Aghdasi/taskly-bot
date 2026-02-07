@@ -61,6 +61,7 @@ Taskly supports **automatic time-block notifications** such as:
 
 - 🎯 Focus Time
 - ☕ Break Time
+- 🍽️ Half Time
 
 Defined using a JSON configuration file and scheduled automatically.
 
