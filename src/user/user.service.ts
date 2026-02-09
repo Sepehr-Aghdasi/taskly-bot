@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Task, UserSettings } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { TimeService } from 'src/time-service/time.service';
+import { UserSettingsFactory } from './user-settings-factory';
 import { UpdateUserSettingsDto } from './dto/update-user-settings.dto';
 import { CreateOrUpdateUserDto } from './dto/create-or-update-user.dto';
 
@@ -18,23 +19,38 @@ export class UserService {
     }
 
     async getOrCreateUser(telegramId: string, data?: CreateOrUpdateUserDto) {
-        const user = await this.prisma.user.upsert({
+        // Try to find the user first
+        let user = await this.prisma.user.findUnique({
             where: { telegramId },
-            create: {
-                telegramId,
-                username: data?.username,
-                firstName: data?.firstName,
-                lastName: data?.lastName,
-                userSetting: {
-                    create: { reminder: true },
-                },
-            },
-            update: {
-                firstName: data?.firstName ?? undefined,
-                lastName: data?.lastName ?? undefined,
-            },
             include: { userSetting: true },
         });
+
+        if (user) {
+            return user;
+        }
+
+        try {
+            user = await this.prisma.user.create({
+                data: {
+                    telegramId,
+                    username: data?.username,
+                    firstName: data?.firstName,
+                    lastName: data?.lastName,
+                    userSetting: { create: UserSettingsFactory.defaultSettings() },
+                },
+                include: { userSetting: true },
+            });
+        } catch (err: any) {
+            if (err.code === 'P2002') {
+                // Race condition: someone else created the user
+                user = await this.prisma.user.findUnique({
+                    where: { telegramId },
+                    include: { userSetting: true },
+                });
+            } else {
+                throw err;
+            }
+        }
 
         return user;
     }
