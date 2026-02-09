@@ -18,7 +18,7 @@ model User {
 
   tasks Task[]
 
-  userSetting UserSettings?
+  userSettings UserSettings?
 }
 
 model UserSettings {

@@ -501,10 +501,10 @@ export class TelegramService implements OnModuleInit {
     }
 
     private async showSettingsMenu(chatId: number, userId: number) {
-        const userSetting = await this.userService.getUserSettings(userId);
+        const userSettings = await this.userService.getUserSettings(userId);
 
-        const reminderStatus = userSetting?.reminder ? "✅" : "❌";
-        const focusAlertsStatus = userSetting?.focusAlerts ? "✅" : "❌";
+        const reminderStatus = userSettings?.reminder ? "✅" : "❌";
+        const focusAlertsStatus = userSettings?.focusAlerts ? "✅" : "❌";
 
         const settingsKeyboard = [
             [{ text: `${UserSettingsButtons.REMINDER} (${reminderStatus})` }],
@@ -553,7 +553,7 @@ export class TelegramService implements OnModuleInit {
         const users = await this.userService.getAllUsers();
 
         for (const user of users) {
-            const reminder = user.userSetting.reminder;
+            const reminder = user.userSettings.reminder;
             if (!reminder) continue;
 
             const chatId = Number(user.telegramId);

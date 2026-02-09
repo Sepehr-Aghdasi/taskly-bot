@@ -15,14 +15,14 @@ export class UserService {
     ) { }
 
     async getAllUsers() {
-        return this.prisma.user.findMany({ include: { userSetting: true } });
+        return this.prisma.user.findMany({ include: { userSettings: true } });
     }
 
     async getOrCreateUser(telegramId: string, data?: CreateOrUpdateUserDto) {
         // Try to find the user first
         let user = await this.prisma.user.findUnique({
             where: { telegramId },
-            include: { userSetting: true },
+            include: { userSettings: true },
         });
 
         if (user) {
@@ -36,16 +36,16 @@ export class UserService {
                     username: data?.username,
                     firstName: data?.firstName,
                     lastName: data?.lastName,
-                    userSetting: { create: UserSettingsFactory.defaultSettings() },
+                    userSettings: { create: UserSettingsFactory.defaultSettings() },
                 },
-                include: { userSetting: true },
+                include: { userSettings: true },
             });
-        } catch (err: any) {
+        } catch (err) {
             if (err.code === 'P2002') {
                 // Race condition: someone else created the user
                 user = await this.prisma.user.findUnique({
                     where: { telegramId },
-                    include: { userSetting: true },
+                    include: { userSettings: true },
                 });
             } else {
                 throw err;
@@ -58,7 +58,7 @@ export class UserService {
     async findByTelegramId(telegramId: string) {
         return this.prisma.user.findUnique({
             where: { telegramId },
-            include: { userSetting: true },
+            include: { userSettings: true },
         });
     }
 
@@ -237,7 +237,7 @@ export class UserService {
     async getAllUsersWithFocusAlertsEnabled() {
         return this.prisma.user.findMany({
             where: {
-                userSetting: {
+                userSettings: {
                     focusAlerts: true,
                 },
             }
