@@ -1,88 +1,107 @@
 # Telegram Task Bot – Ideas & Workflow
 
-این فایل توضیح می‌دهد که چه قابلیت‌هایی قصد داریم به بات تلگرام اضافه کنیم و جریان کار (workflow) پیشنهادی برای مدیریت تسک‌ها چگونه باشد.
+This file outlines the features we plan to add to the Telegram bot and the proposed workflow for managing tasks.
 
-## ایده‌های اصلی
+---
 
-1. **ثبت تسک بدون شروع خودکار !Done**  
-   - وقتی کاربر اسم و کد یک تسک را وارد می‌کند، تسک **فعلاً شروع نشود**.  
-   - تسک فقط در لیست ثبت شود و برای شروع، کاربر باید از لیست انتخاب کند.  
-   - هدف: کاربر بتواند تسک‌هایش را آماده کند و بدون استارت شدن فوری، تصمیم بگیرد چه زمانی آن‌ها را اجرا کند.
+## 1. Add Tasks Without Auto-Start
 
-2. **تغییر جریان کار بات (Workflow) !Done**  
-   - منوی اصلی بات شامل دکمه‌های زیر باشد:  
-     1. **افزودن تسک** – برای ثبت تسک جدید.  
-     2. **لیست تسک‌ها** – نمایش تسک‌های ثبت شده.  
-     3. **گزارش روزانه** – مشاهده کارکرد امروز.  
+- When a user enters a task name and code, the task **does not start automatically**.  
+- The task is only added to the list; the user must select it to start.  
+- **Purpose:** Let users prepare tasks in advance and decide when to execute them.
 
-   - وقتی کاربر **لیست تسک‌ها** را باز می‌کند و یک تسک را انتخاب می‌کند، بات باید گزینه‌های بعدی را ارائه دهد:  
-     - **شروع تسک** – شروع اجرای تسک انتخاب شده.  
-     - **حذف تسک** – حذف تسک از لیست.  
-     - **ویرایش تسک** – تغییر اطلاعات تسک (نام، کد و …).  
-       > جزئیات قابل ویرایش بعداً مشخص می‌شود.  
+---
 
-   - هدف: جریان کار واضح‌تر و انعطاف‌پذیرتر شود و کاربر بتواند روی مدیریت تسک‌ها کنترل کامل داشته باشد، بدون اینکه تسک‌ها ناخواسته شروع شوند.
+## 2. Adjust Bot Workflow
 
-1️⃣ **هوشمند کردن یادآوری‌ها**
+### Main menu should include:
 
-- **یادآوری خودکار تسک‌ها:** اگر یک تسک ثبت شد ولی شروع نشد، بات می‌تونه بعد از ۳۰ دقیقه یادآوری بده:  
-  "⏰ هنوز تسک «X» شروع نشده. می‌خوای شروعش کنی؟"
+1. **Add Task** – register a new task  
+2. **Task List** – view all registered tasks  
+3. **Daily Report** – see today’s performance
 
-- **یادآوری پایان تسک:** بعد از ۲–۳ ساعت از شروع یک تسک، پیام بده:  
-  "⏱ وقتشه تسک «X» رو پایان بدی یا ادامه بدی؟"
+### When a user opens the **Task List** and selects a task, the bot should offer:
 
-2️⃣ **اولویت‌بندی و دسته‌بندی تسک‌ها**
+- **Start Task** – begin the selected task  
+- **Delete Task** – remove the task from the list  
+- **Edit Task** – modify task info (name, code, etc.)  
+> Details of editable fields will be defined later.
 
-- امکان اضافه کردن برچسب یا اولویت به هر تسک: بالا، متوسط، پایین
-- بعد می‌توان از منوی تسک‌ها، فیلتر بر اساس اولویت انجام داد.
+**Purpose:** Make workflow clearer and more flexible, giving users full control over task management.
 
-3️⃣ **ویرایش پیشرفته‌تر**
+---
 
-- هنگام ویرایش، بجای گرفتن همزمان اسم و کد، می‌توان انتخاب کرد چه چیزی را ویرایش کند:  
+## 3. Smart Reminders
 
-  [ویرایش اسم]  
-  [ویرایش کد]  
-  [لغو]  
+- **Auto reminder for un started tasks:**  
+  After 30 minutes, send:  
+  `"⏰ Task «X» hasn’t started yet. Do you want to start it?"`
 
-- اینطوری UX ساده‌تر و شفاف‌تر می‌شود.
+- **Task completion reminder:**  
+  2–3 hours after starting a task, send:  
+  `"⏱ Time to end task «X» or continue?"`
 
-4️⃣ **گزارش‌ها و آمار جذاب‌تر**
+---
 
-- اضافه کردن نمودار کوچک به صورت ایموجی: مثلا 🌕🌗🌑 نشانگر درصد تکمیل روز
-- مقایسه بازدهی امروز با دیروز:  
-  "🟢 امروز ۵ ساعت کار کردی، دیروز ۴ ساعت بود، عالیه!"
+## 4. Task Prioritization & Categorization
 
-5️⃣ **قابلیت Undo**
+- Allow tags or priorities: High, Medium, Low  
+- Filter tasks by priority from the task list
 
-- اگر کاربر اشتباهی تسک را حذف یا ویرایش کرد، یک دکمه [لغو آخرین تغییر] برای چند دقیقه بعد از اقدام اضافه شود.
+---
 
-6️⃣ **Shortcuts یا Quick Actions**
+## 5. Advanced Editing
 
-- از منوی اصلی یا لیست تسک‌ها:  
-  [شروع سریع] برای شروع آخرین تسک ثبت‌شده  
-  [پایان سریع] برای پایان آخرین تسک در حال اجرا
+- When editing, let the user choose what to edit:  
 
-7️⃣ **Gamification**
+  `[Edit Name] | [Edit Code] | [Cancel]`
 
-- هر روز که تسک‌ها کامل شد، یک emoji جایزه یا پیام تشویقی بده:  
-  "🎉 تبریک! امروز تمام تسک‌ها رو انجام دادی!"
+- Simplifies UX and makes it more intuitive.
 
-8️⃣ **گزارش‌های چند حالته و تقویمی**
+---
 
-- امکان انتخاب نوع گزارش:  
-  [روزانه] | [هفتگی] | [ماهانه]
+## 6. Reports & Visual Stats
 
-- گزارش بر اساس تاریخ شمسی یا میلادی و حتی روز هفته نمایش داده شود.  
-  مثلا:  
-  "📅 گزارش هفته جاری (شنبه تا جمعه): ۲۰ ساعت کار کرده‌ای"  
-  "📅 گزارش ماه جاری (فروردین): ۸۰ ساعت کار کرده‌ای"
+- Small emoji-based progress chart: 🌕🌗🌑  
+- Compare today’s productivity with yesterday:  
+  `"🟢 You worked 5 hours today, 4 hours yesterday – great!"`
 
-- قابلیت تغییر نمایش بر اساس شروع هفته یا نوع تقویم برای کاربران مختلف.
+---
 
-- اضافه کردن نمودار ساده یا ایموجی برای مقایسه بازدهی بین روزها، هفته‌ها یا ماه‌ها.
+## 7. Undo Feature
 
-## نکات اضافی
+- After accidentally deleting or editing, a `[Undo Last Change]` button is available for a few minutes.
 
-- دکمه‌های کنسل/بازگشت (`❌ انصراف` / `🔙 برگشت`) همیشه باید کاربر را به منوی اصلی هدایت کنند.  
-- نمایش زمان‌های تسک باید شامل تسک‌های فعال هم باشد، بدون اینکه ساعت پایان واقعی نمایش داده شود، اما زمان سپری‌شده در مجموع لحاظ شود.  
-- در آینده می‌توان قابلیت‌های بیشتر مثل یادآوری خودکار، اولویت‌بندی تسک‌ها و برچسب‌گذاری اضافه کرد.
+---
+
+## 8. Shortcuts / Quick Actions
+
+- From main menu or task list:  
+  - `[Quick Start]` – start the last registered task  
+  - `[Quick End]` – end the last running task
+
+---
+
+## 9. Gamification
+
+- Reward completion of all daily tasks with an emoji or message:  
+  `"🎉 Congrats! You completed all your tasks today!"`
+
+---
+
+## 10. Multi-Mode & Calendar Reports
+
+- Report type selection: `[Daily] | [Weekly] | [Monthly]`  
+- Display reports by Gregorian or Solar Hijri calendar and day of the week:  
+  - `"📅 This week (Sat–Fri): 20 hours worked"`  
+  - `"📅 This month (Farvardin): 80 hours worked"`  
+- Option to adjust week start or calendar type per user preference  
+- Simple emoji charts to compare productivity across days, weeks, or months
+
+---
+
+## Additional Notes
+
+- Cancel/Back buttons (`❌ Cancel` / `🔙 Back`) should always return the user to the main menu  
+- Task timing should include active tasks without showing actual end time, but total elapsed time should be calculated  
+- Future improvements may include automatic reminders, task prioritization, and tagging
