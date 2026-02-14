@@ -85,6 +85,7 @@ export class TelegramService implements OnModuleInit {
         const name = `${user.firstName || 'دوست من'}`;
         const welcomeMessage = getWelcomeMessage(name);
         await this.bot.sendMessage(chatId, welcomeMessage, { parse_mode: 'Markdown' });
+        await this.sendMainMenu(chatId);
 
         return user;
     }
