@@ -95,6 +95,8 @@ export class TelegramService implements OnModuleInit {
             const text = msg.text;
             if (!text) return;
 
+            if (text === '/start') return;
+
             let user = await this.userService.findByTelegramId(msg.from.id.toString());
             if (!user) {
                 user = await this.performStart(msg);
