@@ -18,16 +18,16 @@ export class TaskSchedulerService implements OnModuleInit {
     start() {
         // Only for Thursday
         cron.schedule('45 12 * * 4', async () => {
-            this.telegramService.scheduleDailyReport();
+            await this.telegramService.scheduleDailyReport();
         }, { timezone: this.timeService.IRAN_TZ });
 
         // Regular days except Fridays and Thursday
-        cron.schedule('45 16 * * 0-3-5', async () => {
-            this.telegramService.scheduleDailyReport();
+        cron.schedule('45 16 * * 0-3,6', async () => {
+            await this.telegramService.scheduleDailyReport();
         }, { timezone: this.timeService.IRAN_TZ });
 
         cron.schedule('0 22 * * *', async () => {
-            this.telegramService.forceCloseAndNotify();
+            await this.telegramService.forceCloseAndNotify();
         }, { timezone: this.timeService.IRAN_TZ });
     }
 
