@@ -322,10 +322,20 @@ export class TelegramService implements OnModuleInit {
                 await this.bot.sendMessage(chatId, `⛔ تسک «${task.name}» فعاله و نمی‌شه حذفش کرد.`);
                 return;
             }
+
             await this.userService.deleteTask(task.id);
-            this.userState.set(chatId, 'MainMenu');
             this.selectedTask.delete(chatId);
-            await this.sendMainMenu(chatId, '🗑 تسک حذف شد.');
+
+            const remainingTasksCount = (await this.userService.getTodayReport(user.id)).length;
+            if (remainingTasksCount === 0) {
+                this.userState.set(chatId, 'MainMenu');
+                await this.sendMainMenu(chatId, '🗑 تسک حذف شد.');
+            } else {
+                this.userState.set(chatId, 'SelectingTask');
+                await this.bot.sendMessage(chatId, '🗑 تسک حذف شد.');
+                await this.showTaskList(chatId, user.id);
+            }
+
             return;
         }
 
