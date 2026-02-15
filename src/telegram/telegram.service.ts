@@ -323,10 +323,9 @@ export class TelegramService implements OnModuleInit {
                 return;
             }
 
-            await this.userService.deleteTask(task.id);
+            const remainingTasksCount = await this.userService.deleteTask(task.id, user.id);
             this.selectedTask.delete(chatId);
 
-            const remainingTasksCount = (await this.userService.getTodayReport(user.id)).length;
             if (remainingTasksCount === 0) {
                 this.userState.set(chatId, 'MainMenu');
                 await this.sendMainMenu(chatId, '🗑 تسک حذف شد.');

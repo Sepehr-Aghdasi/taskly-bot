@@ -140,8 +140,23 @@ export class UserService {
         });
     }
 
-    async deleteTask(taskId: number) {
-        await this.prisma.task.delete({ where: { id: taskId } });
+    async deleteTask(taskId: number, userId: number): Promise<number> {
+        await this.prisma.task.delete({
+            where: { id: taskId },
+        });
+
+        const { startOfDay, endOfDay } = this.timeService.getIranDayRange();
+        const remainingCount = await this.prisma.task.count({
+            where: {
+                userId,
+                createdAt: {
+                    gte: startOfDay,
+                    lte: endOfDay,
+                },
+            },
+        });
+
+        return remainingCount;
     }
 
     async getActiveSession(userId: number) {
