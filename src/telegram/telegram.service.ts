@@ -21,7 +21,7 @@ export class TelegramService implements OnModuleInit {
     ) { }
 
     onModuleInit() {
-        this.bot = new TelegramBot(process.env.TELEGRAM_TEST_TOKEN, { polling: true });
+        this.bot = new TelegramBot(process.env.TELEGRAM_TOKEN, { polling: true });
 
         this.handleStart();
         this.handleMessages();
@@ -609,7 +609,7 @@ export class TelegramService implements OnModuleInit {
 
     private isOutsideWorkingHours(): boolean {
         const hour = this.timeService.getIranHour();
-        return hour >= 24 || hour < 8;
+        return hour >= 22 || hour < 8;
     }
 
     private formatMinutes(totalMinutes: number) {
