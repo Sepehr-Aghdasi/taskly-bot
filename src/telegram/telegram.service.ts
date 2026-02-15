@@ -133,6 +133,7 @@ export class TelegramService implements OnModuleInit {
                     } else if (text.startsWith(UserSettingsButtons.FOCUS_ALERTS)) {
                         this.toggleFocusAlerts(user.id, chatId);
                     }
+                    break;
 
                 default:
                 case 'MainMenu':
