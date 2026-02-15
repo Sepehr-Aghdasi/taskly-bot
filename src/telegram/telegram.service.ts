@@ -103,7 +103,7 @@ export class TelegramService implements OnModuleInit {
                 user = await this.performStart(msg);
             }
 
-            const state = this.userState.get(chatId);
+            const state = this.userState.get(chatId) ?? 'MainMenu';
             const inputStates: UserState[] = ['AddingTaskName', 'EditingTaskName'];
 
             if (this.isNavigationCommand(text) && !inputStates.includes(state)) {
