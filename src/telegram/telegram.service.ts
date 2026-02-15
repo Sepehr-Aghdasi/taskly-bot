@@ -180,14 +180,7 @@ export class TelegramService implements OnModuleInit {
             this.userState.set(chatId, 'MainMenu');
             this.selectedTask.delete(chatId);
 
-            const cancelMessageId = this.cancelMessageIds.get(chatId);
-            if (cancelMessageId) {
-                await this.bot.editMessageReplyMarkup(
-                    { inline_keyboard: [] },
-                    { chat_id: chatId, message_id: cancelMessageId }
-                );
-                this.cancelMessageIds.delete(chatId);
-            }
+            await this.clearCancelInline(chatId);
 
             await this.sendMainMenu(chatId);
             return;
@@ -224,14 +217,7 @@ export class TelegramService implements OnModuleInit {
                 this.userState.set(chatId, 'MainMenu');
                 this.selectedTask.delete(chatId);
 
-                const cancelMessageId = this.cancelMessageIds.get(chatId);
-                if (cancelMessageId) {
-                    await this.bot.editMessageReplyMarkup(
-                        { inline_keyboard: [] },
-                        { chat_id: chatId, message_id: cancelMessageId }
-                    );
-                    this.cancelMessageIds.delete(chatId);
-                }
+                await this.clearCancelInline(chatId);
 
                 await this.bot.answerCallbackQuery(query.id);
                 await this.sendMainMenu(chatId, '❌ لغو شد');
@@ -245,14 +231,7 @@ export class TelegramService implements OnModuleInit {
     private async handleAddTask(chatId: number, text: string, user: User) {
         const task = await this.userService.getOrCreateTask(user.id, text);
 
-        const cancelMessageId = this.cancelMessageIds.get(chatId);
-        if (cancelMessageId) {
-            await this.bot.editMessageReplyMarkup(
-                { inline_keyboard: [] },
-                { chat_id: chatId, message_id: cancelMessageId }
-            );
-            this.cancelMessageIds.delete(chatId);
-        }
+        await this.clearCancelInline(chatId);
 
         this.selectedTask.set(chatId, task);
         this.userState.set(chatId, 'TaskActions');
@@ -397,14 +376,7 @@ export class TelegramService implements OnModuleInit {
         const task = this.selectedTask.get(chatId);
         if (!task) return;
 
-        const cancelMessageId = this.cancelMessageIds.get(chatId);
-        if (cancelMessageId) {
-            await this.bot.editMessageReplyMarkup(
-                { inline_keyboard: [] },
-                { chat_id: chatId, message_id: cancelMessageId }
-            );
-            this.cancelMessageIds.delete(chatId);
-        }
+        await this.clearCancelInline(chatId);
 
         // Update task in DB
         const updatedTask = await this.userService.updateTask(task.id, text);
@@ -428,6 +400,18 @@ export class TelegramService implements OnModuleInit {
         );
 
         this.userState.set(chatId, 'TaskActions');
+    }
+
+    private async clearCancelInline(chatId: number) {
+        const cancelMessageId = this.cancelMessageIds.get(chatId);
+
+        if (cancelMessageId) {
+            await this.bot.editMessageReplyMarkup(
+                { inline_keyboard: [] },
+                { chat_id: chatId, message_id: cancelMessageId }
+            );
+            this.cancelMessageIds.delete(chatId);
+        }
     }
 
     private async sendReport(chatId: number, userId: number, isAutomate: boolean = false) {
