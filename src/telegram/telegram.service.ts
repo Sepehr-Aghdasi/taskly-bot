@@ -303,9 +303,8 @@ export class TelegramService implements OnModuleInit {
             }
 
             await this.userService.startTask(user.id, task);
-            this.userState.set(chatId, 'MainMenu');
-            this.selectedTask.delete(chatId);
-            await this.sendMainMenu(chatId, '🕒 تسک شروع شد.');
+            await this.sendTaskActionsMenu(chatId, task);
+            await this.safeSendMessage(chatId, '🕒 تسک شروع شد.');
             return;
         }
 
@@ -316,9 +315,9 @@ export class TelegramService implements OnModuleInit {
                 return;
             }
             await this.userService.endTask(user.id);
-            this.userState.set(chatId, 'MainMenu');
-            this.selectedTask.delete(chatId);
-            await this.sendMainMenu(chatId, `⏹️ تسک «${task.name}» پایان یافت.`);
+            await this.sendTaskActionsMenu(chatId, task);
+            await this.safeSendMessage(chatId, `⏹️ تسک «${task.name}» پایان یافت.`);
+            await this.sendReport(chatId, user.id, true);
             return;
         }
 
