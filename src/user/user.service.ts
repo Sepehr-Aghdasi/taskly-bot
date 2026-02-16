@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Task, UserSettings } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { TaskWithSessions } from 'src/shared/task.type';
 import { TimeService } from 'src/time-service/time.service';
 import { UserSettingsFactory } from './user-settings-factory';
 import { UpdateUserSettingsDto } from './dto/update-user-settings.dto';
@@ -176,7 +177,7 @@ export class UserService {
         });
     }
 
-    async getTodayReport(userId: number) {
+    async getTodayReport(userId: number): Promise<TaskWithSessions[]> {
         const { startOfDay, endOfDay } = this.timeService.getIranDayRange();
 
         return this.prisma.task.findMany({
