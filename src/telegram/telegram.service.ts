@@ -282,70 +282,77 @@ export class TelegramService implements OnModuleInit {
         const task = this.selectedTask.get(chatId);
         if (!task) return;
 
-        if (text === BotButtons.START_SELECTED_TASK) {
-            const active = await this.userService.getActiveSession(user.id);
-            if (active) {
-                const keyboard: KeyboardButton[][] = [
-                    [{ text: BotButtons.START_NEW_TASK_AFTER_ENDING_ACTIVE }],
-                    [{ text: BotButtons.CANCEL }],
-                ];
-                await this.safeSendMessage(chatId,
-                    `⛔ ابتدا یک تسک فعال دارید: ${active.task.name}\nمی‌خواید اون رو پایان بدیم و این تسک رو شروع کنیم؟`,
-                    { reply_markup: { keyboard, resize_keyboard: true } }
-                );
-                this.userState.set(chatId, 'ConfirmStartNewTaskAfterEndingActive');
+        const active = await this.userService.getActiveSession(user.id);
+
+        switch (text) {
+            case BotButtons.START_SELECTED_TASK:
+                if (active && active.taskId !== task.id) {
+                    const keyboard: KeyboardButton[][] = [
+                        [{ text: BotButtons.START_NEW_TASK_AFTER_ENDING_ACTIVE }],
+                        [{ text: BotButtons.CANCEL }],
+                    ];
+                    await this.safeSendMessage(
+                        chatId,
+                        `⛔ ابتدا یک تسک فعال دارید: ${active.task.name}\nمی‌خواید اون رو پایان بدیم و این تسک رو شروع کنیم؟`,
+                        { reply_markup: { keyboard, resize_keyboard: true } }
+                    );
+                    this.userState.set(chatId, 'ConfirmStartNewTaskAfterEndingActive');
+                    return;
+                }
+
+                if (this.isOutsideWorkingHours()) {
+                    await this.safeSendMessage(chatId, '⏰ خارج از ساعات مجاز کاری هست.');
+                    return;
+                }
+
+                if (!active || active.taskId !== task.id) {
+                    await this.userService.startTask(user.id, task);
+                }
+
+                await this.sendTaskActionsMenu(chatId, task);
+                await this.safeSendMessage(chatId, '🕒 تسک شروع شد.');
                 return;
-            }
 
-            if (this.isOutsideWorkingHours()) {
-                await this.safeSendMessage(chatId, '⏰ خارج از ساعات مجاز کاری هست.');
+            case BotButtons.END_SELECTED_TASK:
+                if (!active || active.taskId !== task.id) {
+                    await this.safeSendMessage(chatId, '⚠️ این تسک در حال اجرا نیست.');
+                    return;
+                }
+
+                await this.userService.endTask(user.id);
+
+                await this.sendTaskActionsMenu(chatId, task);
+                await this.safeSendMessage(chatId, `⏹️ تسک «${task.name}» پایان یافت.`);
+                await this.sendReport(chatId, user.id, true);
                 return;
-            }
 
-            await this.userService.startTask(user.id, task);
-            await this.sendTaskActionsMenu(chatId, task);
-            await this.safeSendMessage(chatId, '🕒 تسک شروع شد.');
-            return;
-        }
+            case BotButtons.DELETE_SELECTED_TASK:
+                if (active && active.taskId === task.id) {
+                    await this.safeSendMessage(chatId, `⛔ تسک «${task.name}» فعاله و نمی‌شه حذفش کرد.`);
+                    return;
+                }
 
-        if (text === BotButtons.END_SELECTED_TASK) {
-            const active = await this.userService.getActiveSession(user.id);
-            if (!active || active.taskId !== task.id) {
-                await this.safeSendMessage(chatId, '⚠️ این تسک در حال اجرا نیست.');
+                const remainingTasksCount = await this.userService.deleteTask(task.id, user.id);
+                this.selectedTask.delete(chatId);
+
+                if (remainingTasksCount === 0) {
+                    this.userState.set(chatId, 'MainMenu');
+                    await this.sendMainMenu(chatId, '🗑 تسک حذف شد.');
+                } else {
+                    this.userState.set(chatId, 'SelectingTask');
+                    await this.safeSendMessage(chatId, '🗑 تسک حذف شد.');
+                    await this.showTaskList(chatId, user.id);
+                }
                 return;
-            }
-            await this.userService.endTask(user.id);
-            await this.sendTaskActionsMenu(chatId, task);
-            await this.safeSendMessage(chatId, `⏹️ تسک «${task.name}» پایان یافت.`);
-            await this.sendReport(chatId, user.id, true);
-            return;
-        }
 
-        if (text === BotButtons.DELETE_SELECTED_TASK) {
-            const active = await this.userService.getActiveSession(user.id);
-            if (active && active.taskId === task.id) {
-                await this.safeSendMessage(chatId, `⛔ تسک «${task.name}» فعاله و نمی‌شه حذفش کرد.`);
+            case BotButtons.EDIT_TASK:
+                await this.promptEditTaskName(chatId);
                 return;
-            }
 
-            const remainingTasksCount = await this.userService.deleteTask(task.id, user.id);
-            this.selectedTask.delete(chatId);
+            default:
+                console.log("default TEST");
 
-            if (remainingTasksCount === 0) {
-                this.userState.set(chatId, 'MainMenu');
-                await this.sendMainMenu(chatId, '🗑 تسک حذف شد.');
-            } else {
-                this.userState.set(chatId, 'SelectingTask');
-                await this.safeSendMessage(chatId, '🗑 تسک حذف شد.');
-                await this.showTaskList(chatId, user.id);
-            }
-
-            return;
-        }
-
-        if (text === BotButtons.EDIT_TASK) {
-            await this.promptEditTaskName(chatId);
-            return;
+                return;
         }
     }
 
@@ -358,10 +365,9 @@ export class TelegramService implements OnModuleInit {
             if (active) await this.userService.endTask(user.id);
 
             await this.userService.startTask(user.id, task);
-            this.userState.set(chatId, 'MainMenu');
-            this.selectedTask.delete(chatId);
-
-            await this.sendMainMenu(chatId, `⏹️ تسک قبلی پایان یافت و تسک «${task.name}» شروع شد.`);
+            this.userState.set(chatId, 'TaskActions');
+            await this.sendTaskActionsMenu(chatId, task);
+            await this.safeSendMessage(chatId, `⏹️ تسک قبلی پایان یافت و تسک «${task.name}» شروع شد.`);
         }
 
         if (text === BotButtons.CANCEL) {
@@ -396,24 +402,11 @@ export class TelegramService implements OnModuleInit {
         const updatedTask = await this.userService.updateTask(task.id, text);
 
         // Update the selectedTask map
+        this.userState.set(chatId, 'TaskActions');
         this.selectedTask.set(chatId, { ...updatedTask, name: updatedTask.name });
 
-        // Check if task is currently active
-        const activeSession = await this.userService.getActiveSession(task.userId);
-        const startOrEndButton = activeSession?.taskId === task.id
-            ? BotButtons.END_SELECTED_TASK
-            : BotButtons.START_SELECTED_TASK;
-
-        const keyboard = [
-            [{ text: startOrEndButton }],
-            [{ text: BotButtons.BACK }]
-        ];
-
-        await this.safeSendMessage(chatId, `✅ تغییرات ذخیره شد\nنام جدید: ${text}`,
-            { reply_markup: { keyboard, resize_keyboard: true } }
-        );
-
-        this.userState.set(chatId, 'TaskActions');
+        await this.sendTaskActionsMenu(chatId, task);
+        await this.safeSendMessage(chatId, `✅ تغییرات ذخیره شد\nنام جدید: ${text}`);
     }
 
     private async clearCancelInline(chatId: number) {
