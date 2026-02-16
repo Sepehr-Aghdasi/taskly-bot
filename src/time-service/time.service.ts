@@ -2,8 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class TimeService {
-
-    public readonly IRAN_TZ = "Asia/Tehran";
+    public readonly IRAN_TZ = 'Asia/Tehran';
 
     // Current time in UTC
     nowUTC(): Date {
@@ -12,13 +11,16 @@ export class TimeService {
 
     // Current Iran hour (business logic safe)
     getIranHour(): number {
-        const iranTime = new Date(
-            new Date().toLocaleString("en-US", { timeZone: this.IRAN_TZ })
-        );
-        return iranTime.getHours();
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: this.IRAN_TZ,
+            hour12: false,
+            hour: '2-digit',
+        }).formatToParts(new Date());
+
+        return Number(parts.find(p => p.type === 'hour')?.value ?? 0);
     }
 
-    // Format time for messages (UI layer)
+    /** Format a Date object to Iran time string HH:mm */
     formatIranTime(date: Date): string {
         return date.toLocaleTimeString("en-US", {
             timeZone: this.IRAN_TZ,
@@ -28,33 +30,36 @@ export class TimeService {
         });
     }
 
-    // Difference in minutes based on Iran time
+    /** Difference in minutes between two dates */
     diffMinutes(from: Date, to: Date): number {
         const msDiff = to.getTime() - from.getTime();
         return Math.round(msDiff / 60000);
     }
 
+    /**
+     * Get start and end of the current day in Iran timezone
+     * Returns { startOfDay, endOfDay } as UTC Dates
+     */
     getIranDayRange() {
         const now = new Date();
 
-        // Get Iran time parts safely
-        const iranDateParts = new Intl.DateTimeFormat('en-US', {
-            timeZone: 'Asia/Tehran',
+        // Extract Iran date parts safely
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: this.IRAN_TZ,
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
             hour12: false,
         }).formatToParts(now);
 
-        const year = Number(iranDateParts.find(p => p.type === 'year')!.value);
-        const month = Number(iranDateParts.find(p => p.type === 'month')!.value);
-        const day = Number(iranDateParts.find(p => p.type === 'day')!.value);
+        const year = Number(parts.find(p => p.type === 'year')!.value);
+        const month = Number(parts.find(p => p.type === 'month')!.value);
+        const day = Number(parts.find(p => p.type === 'day')!.value);
 
-        // Build UTC range that represents Iran day
-        const startOfDay = new Date(Date.UTC(year, month - 1, day, -3, -30, 0, 0));
-        const endOfDay = new Date(Date.UTC(year, month - 1, day, 20, 29, 59, 999));
+        // Construct UTC dates that correspond to Iran start/end of day
+        const startOfDay = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+        const endOfDay = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
 
         return { startOfDay, endOfDay };
     }
-
 }
