@@ -230,7 +230,12 @@ export class TelegramService implements OnModuleInit {
     }
 
     private async handleAddTask(chatId: number, text: string, user: User) {
-        const task = await this.userService.getOrCreateTask(user.id, text);
+        const { task, alreadyExistsToday } = await this.userService.getOrCreateTask(user.id, text);
+
+        if (alreadyExistsToday) {
+            await this.safeSendMessage(chatId, `⚠️ تسکی با این اسم امروز قبلاً ثبت شده! لطفاً اسم دیگری انتخاب کن.`);
+            return;
+        }
 
         await this.clearCancelInline(chatId);
 

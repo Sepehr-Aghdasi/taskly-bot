@@ -91,20 +91,34 @@ export class UserService {
         });
     }
 
-    async getOrCreateTask(userId: number, name: string) {
-        const existing = await this.prisma.task.findFirst({
-            where: { userId, name },
+    /**
+      * Creates a task for the user if it doesn't already exist today.
+      * @returns Object with:
+      *   - alreadyExistsToday: true if a task with the same name exists today
+      *   - task: the existing or newly created task
+    */
+    async getOrCreateTask(userId: number, name: string): Promise<{ alreadyExistsToday: boolean; task: Task }> {
+        const { startOfDay } = this.timeService.getIranDayRange();
+
+        const existingTask = await this.prisma.task.findFirst({
+            where: {
+                userId,
+                name,
+                createdAt: {
+                    gte: startOfDay,
+                },
+            },
         });
 
-        if (existing) {
-            return existing;
+        if (existingTask) {
+            return { alreadyExistsToday: true, task: existingTask };
         }
 
-        const task = await this.prisma.task.create({
+        const newTask = await this.prisma.task.create({
             data: { userId, name },
         });
 
-        return task;
+        return { alreadyExistsToday: false, task: newTask };
     }
 
     async startTask(userId: number, task: Task) {
