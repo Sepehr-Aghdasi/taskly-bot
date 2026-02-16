@@ -1,26 +1,26 @@
 export enum BotButtons {
     // ===== Main Menu =====
-    ADD_TASK = "➕ افزودن تسک",
-    TASK_LIST = "📋 لیست تسک‌ها",
-    TODAY_REPORT = "📊 گزارش روزانه",
-    SETTINGS = "⚙️ تنظیمات",
+    ADD_TASK = "buttons.ADD_TASK",
+    TASK_LIST = "buttons.TASK_LIST",
+    TODAY_REPORT = "buttons.TODAY_REPORT",
+    SETTINGS = "buttons.SETTINGS",
 
     // ===== Task Actions =====
-    START_SELECTED_TASK = "▶️ شروع تسک",
-    END_SELECTED_TASK = "⏹️ پایان تسک",
-    DELETE_SELECTED_TASK = "🗑 حذف تسک",
-    EDIT_TASK = "✏️ ویرایش تسک",
+    START_SELECTED_TASK = "buttons.START_SELECTED_TASK",
+    END_SELECTED_TASK = "buttons.END_SELECTED_TASK",
+    DELETE_SELECTED_TASK = "buttons.DELETE_SELECTED_TASK",
+    EDIT_TASK = "buttons.EDIT_TASK",
 
     // ===== Navigation =====
-    BACK = "🔙 برگشت",
-    CANCEL = "❌ انصراف",
+    BACK = "buttons.BACK",
+    CANCEL = "buttons.CANCEL",
 
-    START_NEW_TASK_AFTER_ENDING_ACTIVE = "🔄 پایان تسک قبلی و شروع تسک جدید"
+    START_NEW_TASK_AFTER_ENDING_ACTIVE = "buttons.START_NEW_TASK_AFTER_ENDING_ACTIVE"
 }
 
 export enum UserSettingsButtons {
-    REMINDER = "🔔 یادآوری",
-    FOCUS_ALERTS = "⏰ هشدار فوکوس",
+    REMINDER = "buttons.REMINDER",
+    FOCUS_ALERTS = "buttons.FOCUS_ALERTS", // TODO
 
-    BACK = "🔙 برگشت"
+    BACK = "buttons.BACK"
 }
