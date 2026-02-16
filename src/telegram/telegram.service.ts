@@ -8,6 +8,7 @@ import { TimeService } from 'src/time-service/time.service';
 import { getWelcomeMessage } from 'src/shared/messages/welcome-message';
 import { BotButtons, UserSettingsButtons } from 'src/shared/bot-buttons.enum';
 import { TimeBlock, TimeBlockTypes } from 'src/shared/configs/time-blocks.type';
+import { TranslateService } from 'src/i18n/translate.service';
 
 @Injectable()
 export class TelegramService implements OnModuleInit {
@@ -18,26 +19,30 @@ export class TelegramService implements OnModuleInit {
 
     constructor(
         private readonly userService: UserService,
-        private readonly timeService: TimeService
+        private readonly timeService: TimeService,
+        private readonly translateService: TranslateService,
     ) { }
 
     onModuleInit() {
-        this.bot = new TelegramBot(process.env.TELEGRAM_TOKEN, { polling: true });
+        this.bot = new TelegramBot(process.env.TELEGRAM_TEST_TOKEN, { polling: true });
 
         this.handleStart();
         this.handleMessages();
         this.handleCallbacks(); // Only need for canceling the add task or editing task name => inline keyboard button.
     }
 
-    private async sendMainMenu(chatId: number, text = "منوی اصلی") {
+    private async sendMainMenu(chatId: number, userId: number, text?: string) {
+        const menuText = text || await this.translateService.translate(userId, 'menu.main');
+        console.log(await this.translateService.translate(userId, BotButtons.ADD_TASK));
+
         const keyboard: KeyboardButton[][] = [
-            [{ text: BotButtons.ADD_TASK }],
-            [{ text: BotButtons.TASK_LIST }],
-            [{ text: BotButtons.TODAY_REPORT }],
-            [{ text: BotButtons.SETTINGS }],
+            [{ text: await this.translateService.translate(userId, BotButtons.ADD_TASK) }],
+            [{ text: await this.translateService.translate(userId, BotButtons.TASK_LIST) }],
+            [{ text: await this.translateService.translate(userId, BotButtons.TODAY_REPORT) }],
+            [{ text: await this.translateService.translate(userId, BotButtons.SETTINGS) }],
         ];
 
-        await this.safeSendMessage(chatId, text, {
+        await this.safeSendMessage(chatId, menuText, {
             reply_markup: { keyboard, resize_keyboard: true },
         });
     }
@@ -86,7 +91,7 @@ export class TelegramService implements OnModuleInit {
         const name = `${user.firstName || 'دوست من'}`;
         const welcomeMessage = getWelcomeMessage(name);
         await this.safeSendMessage(chatId, welcomeMessage, { parse_mode: 'Markdown' });
-        await this.sendMainMenu(chatId);
+        await this.sendMainMenu(chatId, user.id);
 
         return user;
     }
@@ -164,7 +169,7 @@ export class TelegramService implements OnModuleInit {
             if (!tasks.length) {
                 this.userState.set(chatId, 'MainMenu');
                 this.selectedTask.delete(chatId);
-                await this.sendMainMenu(chatId);
+                await this.sendMainMenu(chatId, user.id);
                 return;
             }
 
@@ -183,12 +188,12 @@ export class TelegramService implements OnModuleInit {
 
             await this.clearCancelInline(chatId);
 
-            await this.sendMainMenu(chatId);
+            await this.sendMainMenu(chatId, user.id);
             return;
         }
 
         this.userState.set(chatId, 'MainMenu');
-        await this.sendMainMenu(chatId);
+        await this.sendMainMenu(chatId, user.id);
     }
 
     private async promptAddTaskName(chatId: number) {
@@ -221,7 +226,7 @@ export class TelegramService implements OnModuleInit {
                 await this.clearCancelInline(chatId);
 
                 await this.bot.answerCallbackQuery(query.id);
-                await this.sendMainMenu(chatId, '❌ لغو شد');
+                // await this.sendMainMenu(chatId, user.id, '❌ لغو شد');
                 return;
             }
 
@@ -337,7 +342,7 @@ export class TelegramService implements OnModuleInit {
 
                 if (remainingTasksCount === 0) {
                     this.userState.set(chatId, 'MainMenu');
-                    await this.sendMainMenu(chatId, '🗑 تسک حذف شد.');
+                    await this.sendMainMenu(chatId, user.id, '🗑 تسک حذف شد.');
                 } else {
                     this.userState.set(chatId, 'SelectingTask');
                     await this.safeSendMessage(chatId, '🗑 تسک حذف شد.');
@@ -373,7 +378,7 @@ export class TelegramService implements OnModuleInit {
         if (text === BotButtons.CANCEL) {
             this.userState.set(chatId, 'MainMenu');
             this.selectedTask.delete(chatId);
-            await this.sendMainMenu(chatId);
+            await this.sendMainMenu(chatId, user.id);
         }
     }
 
@@ -514,7 +519,7 @@ export class TelegramService implements OnModuleInit {
         await this.safeSendMessage(chatId, `${UserSettingsButtons.REMINDER} ${statusText}`);
 
         this.userState.set(chatId, 'MainMenu');
-        await this.sendMainMenu(chatId);
+        await this.sendMainMenu(chatId, userId);
     }
 
     private async toggleFocusAlerts(userId: number, chatId: number) {
@@ -527,7 +532,7 @@ export class TelegramService implements OnModuleInit {
         await this.safeSendMessage(chatId, `${UserSettingsButtons.FOCUS_ALERTS} ${statusText}`);
 
         this.userState.set(chatId, 'MainMenu');
-        await this.sendMainMenu(chatId);
+        await this.sendMainMenu(chatId, userId);
     }
 
     async scheduleMorningReminder() {
@@ -617,7 +622,7 @@ export class TelegramService implements OnModuleInit {
 
     private isOutsideWorkingHours(): boolean {
         const hour = this.timeService.getIranHour();
-        return hour >= 22 || hour < 8;
+        return hour >= 24 || hour < 8;
     }
 
     private formatMinutes(totalMinutes: number) {
