@@ -538,6 +538,23 @@ export class TelegramService implements OnModuleInit {
         await this.sendMainMenu(chatId);
     }
 
+    async scheduleMorningReminder() {
+        const users = await this.userService.getAllUsers();
+
+        const jobs = users.map(async (user) => {
+            if (!user.userSettings?.reminder) return;
+
+            const chatId = Number(user.telegramId);
+
+            await this.safeSendMessage(
+                chatId,
+                '☀️ صبح بخیر! یادت باشه تسک‌های امروزت رو وارد کنی 📌'
+            );
+        });
+
+        await Promise.all(jobs);
+    }
+
     async scheduleDailyReport() {
         const users = await this.userService.getAllUsers();
 
