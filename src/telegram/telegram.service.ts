@@ -588,10 +588,16 @@ export class TelegramService implements OnModuleInit {
         try {
             return await this.bot.sendMessage(chatId, text, options);
         } catch (err: any) {
+            // Get current time in Iran timezone
+            const iranNow = new Date().toLocaleString('en-US', {
+                timeZone: this.timeService.IRAN_TZ,
+                hour12: false,
+            });
+
             if (err?.response?.body?.description?.includes('bot was blocked by the user')) {
-                console.log(`User ${chatId} blocked the bot. Skipping message.`);
+                console.log(`[${iranNow}] User ${chatId} blocked the bot. Skipping message.`);
             } else {
-                console.error(`Error sending message to ${chatId}:`, err);
+                console.error(`[${iranNow}] Error sending message to ${chatId}:`, err);
             }
 
             return null;
