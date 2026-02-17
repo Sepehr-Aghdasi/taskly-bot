@@ -584,21 +584,30 @@ export class TelegramService implements OnModuleInit {
         }
     }
 
-    private async safeSendMessage(chatId: number, text: string, options?: TelegramBot.SendMessageOptions) {
+    private async safeSendMessage(
+        chatId: number,
+        text: string,
+        options?: TelegramBot.SendMessageOptions,
+        attempt: number = 1
+    ): Promise<TelegramBot.Message> {
+        const maxReteires = 3;
+
         try {
             return await this.bot.sendMessage(chatId, text, options);
-        } catch (err: any) {
-            // Get current time in Iran timezone
-            const iranNow = new Date().toLocaleString('en-US', {
-                timeZone: this.timeService.IRAN_TZ,
-                hour12: false,
-            });
+        } catch (error: any) {
+            const isNetworkError =
+                error?.code === 'EFATAL' ||
+                error?.cause?.code === 'ECONNRESET' ||
+                error?.cause?.code === 'ETIMEDOUT';
 
-            if (err?.response?.body?.description?.includes('bot was blocked by the user')) {
-                console.log(`[${iranNow}] User ${chatId} blocked the bot. Skipping message.`);
-            } else {
-                console.error(`[${iranNow}] Error sending message to ${chatId}:`, err);
+            if (isNetworkError && attempt <= maxReteires) {
+                const delay = 500 * attempt; // 500ms, 1000ms, 1500ms
+                await new Promise((res) => setTimeout(res, delay));
+
+                return this.safeSendMessage(chatId, text, options, attempt + 1);
             }
+
+            console.error(`Failed to send message to ${chatId}`, error);
 
             return null;
         }
