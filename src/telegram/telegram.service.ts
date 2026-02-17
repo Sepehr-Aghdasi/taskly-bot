@@ -436,8 +436,19 @@ export class TelegramService implements OnModuleInit {
             ? '📊 (خودکار) گزارش امروز:\n'
             : '📊 گزارش امروز:\n';
 
-        for (const task of tasks) {
+        const activeTask = tasks.find(t => t.sessions.some(s => !s.endTime));
+        const inactiveTasks = tasks.filter(t => t !== activeTask);
+
+        // In-active task
+        for (const task of inactiveTasks) {
             const { text, minutes } = this.buildTaskReport(task, now);
+            reportText += text;
+            totalDayMinutes += minutes;
+        }
+
+        // Push active task to end of report 
+        if (activeTask) {
+            const { text, minutes } = this.buildTaskReport(activeTask, now);
             reportText += text;
             totalDayMinutes += minutes;
         }
