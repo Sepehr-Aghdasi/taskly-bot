@@ -350,8 +350,7 @@ export class TelegramService implements OnModuleInit {
                 return;
 
             default:
-                console.log("default TEST");
-
+                await this.safeSendMessage(chatId, '⚠️ لطفاً برای کار با ربات از دکمه‌ها استفاده کنید.');
                 return;
         }
     }
