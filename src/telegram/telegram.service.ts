@@ -599,25 +599,37 @@ export class TelegramService implements OnModuleInit {
         text: string,
         options?: TelegramBot.SendMessageOptions,
         attempt: number = 1
-    ): Promise<TelegramBot.Message> {
-        const maxReteires = 3;
+    ): Promise<TelegramBot.Message | null> {
+        const maxAttempts = 3;
 
         try {
             return await this.bot.sendMessage(chatId, text, options);
         } catch (error: any) {
+            const iranNow = new Date().toLocaleString('en-US', {
+                timeZone: this.timeService.IRAN_TZ,
+                hour12: false,
+            });
+
+            // User blocked the bot → no retry
+            if (error?.response?.body?.description?.includes('bot was blocked by the user')) {
+                console.log(`[${iranNow}] User ${chatId} blocked the bot.`);
+                return null;
+            }
+
+            // Network errors → retry
             const isNetworkError =
                 error?.code === 'EFATAL' ||
                 error?.cause?.code === 'ECONNRESET' ||
                 error?.cause?.code === 'ETIMEDOUT';
 
-            if (isNetworkError && attempt <= maxReteires) {
+            if (isNetworkError && attempt <= maxAttempts) {
                 const delay = 500 * attempt; // 500ms, 1000ms, 1500ms
-                await new Promise((res) => setTimeout(res, delay));
+                await new Promise(res => setTimeout(res, delay));
 
                 return this.safeSendMessage(chatId, text, options, attempt + 1);
             }
 
-            console.error(`Failed to send message to ${chatId}`, error);
+            console.error(`[${iranNow}] Failed to send message to ${chatId} after ${attempt} attempts`, error);
 
             return null;
         }
