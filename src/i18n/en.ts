@@ -79,4 +79,21 @@ export const en = {
         minutes: "minutes",
         fromTo: "⏱ {{start}} to {{end}}",
     },
+
+    myFriend: "My Friend",
+
+    welcomeMessage: `
+Hello {{name}} 👋
+Welcome to **Taskly Bot**! 🎯
+
+This bot helps you manage your tasks and time, so you always know what you are working on:
+
+📝 Add new tasks
+⏱ Start and end tasks
+📊 Daily reports
+🔔 Friendly reminders
+✏️ Edit and delete tasks
+
+With simple and user-friendly buttons, you can easily manage your tasks ✅
+    `,
 } as const;
