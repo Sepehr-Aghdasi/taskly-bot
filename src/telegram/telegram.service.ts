@@ -92,6 +92,9 @@ export class TelegramService implements OnModuleInit {
             }
         );
 
+        // Ensure language is loaded
+        await this.translateService.loadUserLanguage(user.id);
+
         this.userState.set(chatId, 'MainMenu');
 
         let name: string = "";
@@ -120,6 +123,9 @@ export class TelegramService implements OnModuleInit {
             if (!user) {
                 user = await this.performStart(msg);
             }
+
+            // Ensure language is loaded
+            await this.translateService.loadUserLanguage(user.id);
 
             const state = this.userState.get(chatId) ?? 'MainMenu';
             const inputStates: UserState[] = ['AddingTaskName', 'EditingTaskName'];
@@ -178,6 +184,8 @@ export class TelegramService implements OnModuleInit {
                         await this.sendReport(chatId, user.id);
                     } else if (text === settingsButton) {
                         this.showSettingsMenu(chatId, user.id);
+                    } else {
+                        this.sendMainMenu(chatId, user.id);
                     }
                     break;
             }
@@ -210,7 +218,8 @@ export class TelegramService implements OnModuleInit {
             const backButton = this.translateService.translate(user.id, BotButtons.BACK);
 
             keyboard.push([{ text: backButton }]);
-            await this.safeSendMessage(chatId, 'menu.selectTask', { reply_markup: { keyboard, resize_keyboard: true } });
+            const message = this.translateService.translate(user.id, 'menu.selectTask');
+            await this.safeSendMessage(chatId, message, { reply_markup: { keyboard, resize_keyboard: true } });
             return;
         }
 
@@ -257,6 +266,10 @@ export class TelegramService implements OnModuleInit {
 
             const telegramId = query.from.id.toString();
             const user = await this.userService.findByTelegramId(telegramId);
+
+            // Ensure language is loaded
+            await this.translateService.loadUserLanguage(user.id);
+
             const cancelButton = this.translateService.translate(user.id, BotButtons.CANCEL);
 
             if (query.data === cancelButton) {
@@ -265,7 +278,10 @@ export class TelegramService implements OnModuleInit {
 
                 await this.clearCancelInline(chatId);
 
+                const message = this.translateService.translate(user.id, 'cancel.done');
+
                 await this.bot.answerCallbackQuery(query.id);
+                await this.sendMainMenu(chatId, user.id, message);
                 return;
             }
 
@@ -659,6 +675,7 @@ export class TelegramService implements OnModuleInit {
 
         const settings = await this.userService.getUserSettings(user.id);
         settings.language = selected.code;
+        // console.log(settings);
 
         await this.userService.updateUserSettings(user.id, settings);
 

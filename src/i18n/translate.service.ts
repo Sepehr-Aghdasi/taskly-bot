@@ -1,14 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { en } from './en';
 import { fa } from './fa';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class TranslateService {
 
-    // Cache user language
-    private userLanguages = new Map<number, Language>();
+    private userLanguages = new Map<number, string>(); // cache user languages
+    private loadingLanguages = new Map<number, Promise<string>>(); // prevent race conditions
 
-    constructor() { }
+    constructor(private readonly userService: UserService) { }
 
     translate(userId: number, key: string, params?: Record<string, string | number>): string {
         const lang = this.userLanguages.get(userId) || 'en';
@@ -18,7 +19,33 @@ export class TranslateService {
         return this.interpolate(value, params);
     }
 
-    setUserLanguage(userId: number, lang: Language) {
+    /**
+     * Load user language from DB if not cached
+     */
+    async loadUserLanguage(userId: number): Promise<void> {
+        if (this.userLanguages.has(userId)) return;
+
+        // Prevent multiple simultaneous DB requests
+        if (this.loadingLanguages.has(userId)) {
+            await this.loadingLanguages.get(userId);
+            return;
+        }
+
+        const promise = this.userService.getUserSettings(userId)
+            .then(settings => {
+                const lang = settings.language;
+                this.userLanguages.set(userId, lang);
+                return lang;
+            })
+            .finally(() => {
+                this.loadingLanguages.delete(userId);
+            });
+
+        this.loadingLanguages.set(userId, promise);
+        await promise;
+    }
+
+    setUserLanguage(userId: number, lang: string) {
         this.userLanguages.set(userId, lang);
     }
 
