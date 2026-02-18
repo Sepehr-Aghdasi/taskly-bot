@@ -31,13 +31,13 @@ export class TelegramService implements OnModuleInit {
     }
 
     private async sendMainMenu(chatId: number, userId: number, text?: string) {
-        const menuText = text || await this.translateService.translate(userId, 'menu.main');
+        const menuText = text || this.translateService.translate(userId, 'menu.main');
 
         const keyboard: KeyboardButton[][] = [
-            [{ text: await this.translateService.translate(userId, BotButtons.ADD_TASK) }],
-            [{ text: await this.translateService.translate(userId, BotButtons.TASK_LIST) }],
-            [{ text: await this.translateService.translate(userId, BotButtons.TODAY_REPORT) }],
-            [{ text: await this.translateService.translate(userId, BotButtons.SETTINGS) }],
+            [{ text: this.translateService.translate(userId, BotButtons.ADD_TASK) }],
+            [{ text: this.translateService.translate(userId, BotButtons.TASK_LIST) }],
+            [{ text: this.translateService.translate(userId, BotButtons.TODAY_REPORT) }],
+            [{ text: this.translateService.translate(userId, BotButtons.SETTINGS) }],
         ];
 
         await this.safeSendMessage(chatId, menuText, {
@@ -48,11 +48,11 @@ export class TelegramService implements OnModuleInit {
     private async sendTaskActionsMenu(chatId: number, task: Task) {
         const activeSession = await this.userService.getActiveSession(task.userId);
 
-        const endSelectedTaskButton = await this.translateService.translate(task.userId, BotButtons.END_SELECTED_TASK);
-        const startSelectedTaskButton = await this.translateService.translate(task.userId, BotButtons.START_SELECTED_TASK);
-        const deleteSelectedTaskButton = await this.translateService.translate(task.userId, BotButtons.DELETE_SELECTED_TASK);
-        const editTaskButton = await this.translateService.translate(task.userId, BotButtons.EDIT_TASK);
-        const backButton = await this.translateService.translate(task.userId, BotButtons.BACK);
+        const endSelectedTaskButton = this.translateService.translate(task.userId, BotButtons.END_SELECTED_TASK);
+        const startSelectedTaskButton = this.translateService.translate(task.userId, BotButtons.START_SELECTED_TASK);
+        const deleteSelectedTaskButton = this.translateService.translate(task.userId, BotButtons.DELETE_SELECTED_TASK);
+        const editTaskButton = this.translateService.translate(task.userId, BotButtons.EDIT_TASK);
+        const backButton = this.translateService.translate(task.userId, BotButtons.BACK);
 
         let keyboard: KeyboardButton[][] = [];
 
@@ -68,7 +68,7 @@ export class TelegramService implements OnModuleInit {
             [{ text: backButton }]
         );
 
-        const message = await this.translateService.translate(task.userId, "task.selected", { name: task.name });
+        const message = this.translateService.translate(task.userId, "task.selected", { name: task.name });
         await this.safeSendMessage(
             chatId,
             message,
@@ -98,10 +98,10 @@ export class TelegramService implements OnModuleInit {
         if (user.firstName) {
             name = user.firstName;
         } else {
-            name = await this.translateService.translate(user.id, "myFriend");
+            name = this.translateService.translate(user.id, "myFriend");
         }
 
-        const welcomeMessage = await this.translateService.translate(user.id, "welcomeMessage", { name: name });
+        const welcomeMessage = this.translateService.translate(user.id, "welcomeMessage", { name: name });
         await this.safeSendMessage(chatId, welcomeMessage, { parse_mode: 'Markdown' });
         await this.sendMainMenu(chatId, user.id);
 
@@ -146,9 +146,9 @@ export class TelegramService implements OnModuleInit {
                     await this.handleEditTaskName(chatId, text);
                     break;
                 case 'SettingsMenu':
-                    const reminderButton = await this.translateService.translate(user.id, UserSettingsButtons.REMINDER);
-                    const focusAlertButton = await this.translateService.translate(user.id, UserSettingsButtons.FOCUS_ALERTS);
-                    const languageButton = await this.translateService.translate(user.id, UserSettingsButtons.LANGUAGE);
+                    const reminderButton = this.translateService.translate(user.id, UserSettingsButtons.REMINDER);
+                    const focusAlertButton = this.translateService.translate(user.id, UserSettingsButtons.FOCUS_ALERTS);
+                    const languageButton = this.translateService.translate(user.id, UserSettingsButtons.LANGUAGE);
 
                     if (text.startsWith(reminderButton)) {
                         this.toggleReminder(user.id, chatId);
@@ -165,10 +165,10 @@ export class TelegramService implements OnModuleInit {
 
                 default:
                 case 'MainMenu':
-                    const addTaskButton = await this.translateService.translate(user.id, BotButtons.ADD_TASK);
-                    const taskListButton = await this.translateService.translate(user.id, BotButtons.TASK_LIST);
-                    const reportButton = await this.translateService.translate(user.id, BotButtons.TODAY_REPORT);
-                    const settingsButton = await this.translateService.translate(user.id, BotButtons.SETTINGS);
+                    const addTaskButton = this.translateService.translate(user.id, BotButtons.ADD_TASK);
+                    const taskListButton = this.translateService.translate(user.id, BotButtons.TASK_LIST);
+                    const reportButton = this.translateService.translate(user.id, BotButtons.TODAY_REPORT);
+                    const settingsButton = this.translateService.translate(user.id, BotButtons.SETTINGS);
 
                     if (text === addTaskButton) {
                         await this.promptAddTaskName(chatId, user.id);
@@ -185,8 +185,8 @@ export class TelegramService implements OnModuleInit {
     }
 
     private async isNavigationCommand(text: string, userId: number) {
-        const backButton = await this.translateService.translate(userId, BotButtons.BACK);
-        const cancelButton = await this.translateService.translate(userId, BotButtons.CANCEL);
+        const backButton = this.translateService.translate(userId, BotButtons.BACK);
+        const cancelButton = this.translateService.translate(userId, BotButtons.CANCEL);
 
         return text === backButton || text === cancelButton;
     }
@@ -207,7 +207,7 @@ export class TelegramService implements OnModuleInit {
             this.selectedTask.delete(chatId);
 
             const keyboard = tasks.map(t => [{ text: t.name }]);
-            const backButton = await this.translateService.translate(user.id, BotButtons.BACK);
+            const backButton = this.translateService.translate(user.id, BotButtons.BACK);
 
             keyboard.push([{ text: backButton }]);
             await this.safeSendMessage(chatId, 'menu.selectTask', { reply_markup: { keyboard, resize_keyboard: true } });
@@ -231,13 +231,13 @@ export class TelegramService implements OnModuleInit {
     private async promptAddTaskName(chatId: number, userId: number) {
         this.userState.set(chatId, 'AddingTaskName');
 
-        const enterNameMessage = await this.translateService.translate(userId, 'task.enterName');
+        const enterNameMessage = this.translateService.translate(userId, 'task.enterName');
         await this.safeSendMessage(chatId, enterNameMessage, {
             reply_markup: { remove_keyboard: true }
         });
 
-        const cancelHintMessage = await this.translateService.translate(userId, 'cancel.hint');
-        const cancelButton = await this.translateService.translate(userId, BotButtons.CANCEL);
+        const cancelHintMessage = this.translateService.translate(userId, 'cancel.hint');
+        const cancelButton = this.translateService.translate(userId, BotButtons.CANCEL);
 
         const cancelMsg = await this.safeSendMessage(chatId, cancelHintMessage, {
             reply_markup: {
@@ -257,7 +257,7 @@ export class TelegramService implements OnModuleInit {
 
             const telegramId = query.from.id.toString();
             const user = await this.userService.findByTelegramId(telegramId);
-            const cancelButton = await this.translateService.translate(user.id, BotButtons.CANCEL);
+            const cancelButton = this.translateService.translate(user.id, BotButtons.CANCEL);
 
             if (query.data === cancelButton) {
                 this.userState.set(chatId, 'MainMenu');
@@ -277,7 +277,7 @@ export class TelegramService implements OnModuleInit {
         const { task, alreadyExistsToday } = await this.userService.getOrCreateTask(user.id, text);
 
         if (alreadyExistsToday) {
-            const message = await this.translateService.translate(user.id, 'task.duplicateToday');
+            const message = this.translateService.translate(user.id, 'task.duplicateToday');
             await this.safeSendMessage(chatId, message);
             return;
         }
@@ -287,14 +287,14 @@ export class TelegramService implements OnModuleInit {
         this.selectedTask.set(chatId, task);
         this.userState.set(chatId, 'TaskActions');
 
-        const startSelectedTaskButton = await this.translateService.translate(user.id, BotButtons.START_SELECTED_TASK);
-        const backButton = await this.translateService.translate(user.id, BotButtons.BACK);
+        const startSelectedTaskButton = this.translateService.translate(user.id, BotButtons.START_SELECTED_TASK);
+        const backButton = this.translateService.translate(user.id, BotButtons.BACK);
         const keyboard = [
             [{ text: startSelectedTaskButton }],
             [{ text: backButton }]
         ];
 
-        const message = await this.translateService.translate(user.id, 'task.created', { name: task.name });
+        const message = this.translateService.translate(user.id, 'task.created', { name: task.name });
         await this.safeSendMessage(
             chatId,
             message,
@@ -305,17 +305,17 @@ export class TelegramService implements OnModuleInit {
     private async showTaskList(chatId: number, userId: number) {
         const tasks = await this.userService.getTodayReport(userId);
         if (!tasks.length) {
-            const message = await this.translateService.translate(userId, 'menu.noTask');
+            const message = this.translateService.translate(userId, 'menu.noTask');
             await this.safeSendMessage(chatId, message);
             return;
         }
 
         const keyboard = tasks.map(task => [{ text: task.name }]);
-        const backButton = await this.translateService.translate(userId, BotButtons.BACK);
+        const backButton = this.translateService.translate(userId, BotButtons.BACK);
         keyboard.push([{ text: backButton }]);
 
         this.userState.set(chatId, 'SelectingTask');
-        const message = await this.translateService.translate(userId, 'menu.selectTask');
+        const message = this.translateService.translate(userId, 'menu.selectTask');
         await this.safeSendMessage(chatId, message, { reply_markup: { keyboard, resize_keyboard: true } });
     }
 
@@ -335,24 +335,24 @@ export class TelegramService implements OnModuleInit {
 
         const active = await this.userService.getActiveSession(user.id);
 
-        const startSelectedTaskButton = await this.translateService.translate(user.id, BotButtons.START_SELECTED_TASK);
-        const endSelectedTaskButton = await this.translateService.translate(user.id, BotButtons.END_SELECTED_TASK);
-        const deleteSelectedTaskButton = await this.translateService.translate(user.id, BotButtons.DELETE_SELECTED_TASK);
-        const editTaskButton = await this.translateService.translate(user.id, BotButtons.EDIT_TASK);
+        const startSelectedTaskButton = this.translateService.translate(user.id, BotButtons.START_SELECTED_TASK);
+        const endSelectedTaskButton = this.translateService.translate(user.id, BotButtons.END_SELECTED_TASK);
+        const deleteSelectedTaskButton = this.translateService.translate(user.id, BotButtons.DELETE_SELECTED_TASK);
+        const editTaskButton = this.translateService.translate(user.id, BotButtons.EDIT_TASK);
 
         switch (text) {
             case startSelectedTaskButton: {
                 if (active && active.taskId !== task.id) {
 
-                    const startNewTaskAfterEndingActiveButton = await this.translateService.translate(user.id, BotButtons.START_NEW_TASK_AFTER_ENDING_ACTIVE);
-                    const cancelButton = await this.translateService.translate(user.id, BotButtons.CANCEL);
+                    const startNewTaskAfterEndingActiveButton = this.translateService.translate(user.id, BotButtons.START_NEW_TASK_AFTER_ENDING_ACTIVE);
+                    const cancelButton = this.translateService.translate(user.id, BotButtons.CANCEL);
 
                     const keyboard: KeyboardButton[][] = [
                         [{ text: startNewTaskAfterEndingActiveButton }],
                         [{ text: cancelButton }],
                     ];
 
-                    const message = await this.translateService.translate(user.id, 'task.activeExists', { name: task.name });
+                    const message = this.translateService.translate(user.id, 'task.activeExists', { name: task.name });
                     await this.safeSendMessage(
                         chatId,
                         message,
@@ -363,7 +363,7 @@ export class TelegramService implements OnModuleInit {
                 }
 
                 if (this.isOutsideWorkingHours()) {
-                    const message = await this.translateService.translate(user.id, 'notifications.outsideHours');
+                    const message = this.translateService.translate(user.id, 'notifications.outsideHours');
                     await this.safeSendMessage(chatId, message);
                     return;
                 }
@@ -373,14 +373,14 @@ export class TelegramService implements OnModuleInit {
                 }
 
                 await this.sendTaskActionsMenu(chatId, task);
-                const message = await this.translateService.translate(user.id, 'task.started');
+                const message = this.translateService.translate(user.id, 'task.started');
                 await this.safeSendMessage(chatId, message);
                 return;
             }
 
             case endSelectedTaskButton: {
                 if (!active || active.taskId !== task.id) {
-                    const message = await this.translateService.translate(user.id, 'task.notRunning');
+                    const message = this.translateService.translate(user.id, 'task.notRunning');
                     await this.safeSendMessage(chatId, message);
                     return;
                 }
@@ -388,7 +388,7 @@ export class TelegramService implements OnModuleInit {
                 await this.userService.endTask(user.id);
 
                 await this.sendTaskActionsMenu(chatId, task);
-                const message = await this.translateService.translate(user.id, 'task.ended', { name: task.name });
+                const message = this.translateService.translate(user.id, 'task.ended', { name: task.name });
                 await this.safeSendMessage(chatId, message);
                 await this.sendReport(chatId, user.id, true);
                 return;
@@ -396,7 +396,7 @@ export class TelegramService implements OnModuleInit {
 
             case deleteSelectedTaskButton: {
                 if (active && active.taskId === task.id) {
-                    const message = await this.translateService.translate(user.id, 'task.deleteBlocked', { name: task.name });
+                    const message = this.translateService.translate(user.id, 'task.deleteBlocked', { name: task.name });
                     await this.safeSendMessage(chatId, message);
                     return;
                 }
@@ -404,7 +404,7 @@ export class TelegramService implements OnModuleInit {
                 const remainingTasksCount = await this.userService.deleteTask(task.id, user.id);
                 this.selectedTask.delete(chatId);
 
-                const deletedMessage = await this.translateService.translate(user.id, 'task.deleted', { name: task.name });
+                const deletedMessage = this.translateService.translate(user.id, 'task.deleted', { name: task.name });
                 if (remainingTasksCount === 0) {
                     this.userState.set(chatId, 'MainMenu');
                     await this.sendMainMenu(chatId, user.id, deletedMessage);
@@ -431,8 +431,8 @@ export class TelegramService implements OnModuleInit {
         const task = this.selectedTask.get(chatId);
         if (!task) return;
 
-        const startNewTaskAfterEndingActiveButton = await this.translateService.translate(user.id, BotButtons.START_NEW_TASK_AFTER_ENDING_ACTIVE);
-        const cancelButton = await this.translateService.translate(user.id, BotButtons.CANCEL);
+        const startNewTaskAfterEndingActiveButton = this.translateService.translate(user.id, BotButtons.START_NEW_TASK_AFTER_ENDING_ACTIVE);
+        const cancelButton = this.translateService.translate(user.id, BotButtons.CANCEL);
 
         if (text === startNewTaskAfterEndingActiveButton) {
             const active = await this.userService.getActiveSession(user.id);
@@ -442,7 +442,7 @@ export class TelegramService implements OnModuleInit {
             this.userState.set(chatId, 'TaskActions');
             await this.sendTaskActionsMenu(chatId, task);
 
-            const message = await this.translateService.translate(user.id, 'task.endedAndStartedNew', { name: task.name });
+            const message = this.translateService.translate(user.id, 'task.endedAndStartedNew', { name: task.name });
             await this.safeSendMessage(chatId, message);
         }
 
@@ -459,11 +459,11 @@ export class TelegramService implements OnModuleInit {
 
         this.userState.set(chatId, 'EditingTaskName');
 
-        const message = await this.translateService.translate(userId, "task.enterNewName");
+        const message = this.translateService.translate(userId, "task.enterNewName");
         await this.safeSendMessage(chatId, message, { reply_markup: { remove_keyboard: true } });
 
-        const cancelTranslate = await this.translateService.translate(userId, "cancel.hint");
-        const cancelButton = await this.translateService.translate(userId, BotButtons.CANCEL);
+        const cancelTranslate = this.translateService.translate(userId, "cancel.hint");
+        const cancelButton = this.translateService.translate(userId, BotButtons.CANCEL);
         const cancelMsg = await this.safeSendMessage(chatId, cancelTranslate, {
             reply_markup: { inline_keyboard: [[{ text: cancelButton, callback_data: cancelButton }]] }
         });
@@ -484,7 +484,7 @@ export class TelegramService implements OnModuleInit {
         this.userState.set(chatId, 'TaskActions');
         this.selectedTask.set(chatId, { ...updatedTask, name: updatedTask.name });
 
-        const message = await this.translateService.translate(task.userId, 'task.editSaved', { name: task.name });
+        const message = this.translateService.translate(task.userId, 'task.editSaved', { name: task.name });
         await this.sendTaskActionsMenu(chatId, task);
         await this.safeSendMessage(chatId, message);
     }
@@ -505,7 +505,7 @@ export class TelegramService implements OnModuleInit {
         const tasks = await this.userService.getTodayReport(userId);
 
         if (!tasks.length) {
-            const message = await this.translateService.translate(userId, 'menu.noTaskToday');
+            const message = this.translateService.translate(userId, 'menu.noTaskToday');
             return this.safeSendMessage(chatId, message);
         }
 
@@ -514,8 +514,8 @@ export class TelegramService implements OnModuleInit {
         let totalDayMinutes = 0;
 
         let reportText = isAutomate
-            ? await this.translateService.translate(userId, 'report.autoTitle')
-            : await this.translateService.translate(userId, 'report.title');
+            ? this.translateService.translate(userId, 'report.autoTitle')
+            : this.translateService.translate(userId, 'report.title');
 
         const activeTask = tasks.find(t => t.sessions.some(s => !s.endTime));
         const inactiveTasks = tasks.filter(t => t !== activeTask);
@@ -535,7 +535,7 @@ export class TelegramService implements OnModuleInit {
         }
 
         reportText += `\n━━━━━━━━━━━━━━\n`;
-        reportText += await this.translateService.translate(userId, 'report.total', {
+        reportText += this.translateService.translate(userId, 'report.total', {
             time: await this.formatMinutes(userId, totalDayMinutes),
         }) + '\n';
 
@@ -551,7 +551,7 @@ export class TelegramService implements OnModuleInit {
         const isActive = !!activeSession;
 
         if (isActive) {
-            const inProgress = await this.translateService.translate(userId, 'task.inProgress');
+            const inProgress = this.translateService.translate(userId, 'task.inProgress');
             text += ` ${inProgress}`;
         }
 
@@ -567,13 +567,13 @@ export class TelegramService implements OnModuleInit {
                 end = this.timeService.formatIranTime(session.endTime);
                 sessionDuration = session.duration ?? 0;
             } else {
-                end = await this.translateService.translate(userId, 'report.now');
+                end = this.translateService.translate(userId, 'report.now');
                 sessionDuration = this.timeService.diffMinutes(session.startTime, now);
             }
 
             text +=
                 '   ' +
-                await this.translateService.translate(userId, 'time.fromTo', {
+                this.translateService.translate(userId, 'time.fromTo', {
                     start,
                     end,
                 }) +
@@ -584,7 +584,7 @@ export class TelegramService implements OnModuleInit {
 
         text +=
             '   ' +
-            await this.translateService.translate(userId, 'report.totalLabel', {
+            this.translateService.translate(userId, 'report.totalLabel', {
                 time: await this.formatMinutes(userId, taskMinutes),
             }) +
             '\n';
@@ -602,10 +602,10 @@ export class TelegramService implements OnModuleInit {
         const currentLang = supportedLanguages.find(l => l.code === userSettings?.language);
         const languageStatus = currentLang ? `(${currentLang.emoji})` : "";
 
-        const remainderTranslate = await this.translateService.translate(userId, UserSettingsButtons.REMINDER);
-        const focusAlertsTranslate = await this.translateService.translate(userId, UserSettingsButtons.FOCUS_ALERTS);
-        const languageTranslate = await this.translateService.translate(userId, UserSettingsButtons.LANGUAGE);
-        const backButton = await this.translateService.translate(userId, BotButtons.BACK);
+        const remainderTranslate = this.translateService.translate(userId, UserSettingsButtons.REMINDER);
+        const focusAlertsTranslate = this.translateService.translate(userId, UserSettingsButtons.FOCUS_ALERTS);
+        const languageTranslate = this.translateService.translate(userId, UserSettingsButtons.LANGUAGE);
+        const backButton = this.translateService.translate(userId, BotButtons.BACK);
 
         const settingsKeyboard = [
             [{ text: `${remainderTranslate} (${reminderStatus})` }],
@@ -616,7 +616,7 @@ export class TelegramService implements OnModuleInit {
 
         this.userState.set(chatId, 'SettingsMenu');
 
-        const message = await this.translateService.translate(userId, 'settings.title');
+        const message = this.translateService.translate(userId, 'settings.title');
         await this.safeSendMessage(chatId, message, {
             reply_markup: {
                 keyboard: settingsKeyboard,
@@ -627,13 +627,13 @@ export class TelegramService implements OnModuleInit {
     }
 
     private async showLanguageMenu(userId: number, chatId: number) {
-        const title = await this.translateService.translate(userId, 'settings.title');
+        const title = this.translateService.translate(userId, 'settings.title');
 
         this.userState.set(chatId, 'SelectingLanguage');
 
         const supportedLanguages = this.translateService.getSupportedLanguages();
         const languages = supportedLanguages.map(lang => ({ text: lang.label, code: lang.code }));
-        const backButton = await this.translateService.translate(userId, BotButtons.BACK);
+        const backButton = this.translateService.translate(userId, BotButtons.BACK);
 
         const keyboard = {
             keyboard: languages.map(lang => [{ text: lang.text }]).concat([[{ text: backButton }]]),
@@ -645,7 +645,7 @@ export class TelegramService implements OnModuleInit {
     }
 
     private async handleLanguageSelection(chatId: number, text: string, user: User) {
-        const backButton = await this.translateService.translate(user.id, BotButtons.BACK);
+        const backButton = this.translateService.translate(user.id, BotButtons.BACK);
 
         if (text === backButton) {
             this.userState.set(chatId, 'SettingsMenu');
@@ -664,7 +664,9 @@ export class TelegramService implements OnModuleInit {
 
         this.userState.set(chatId, 'SettingsMenu');
 
-        const successMessage = await this.translateService.translate(user.id, 'settings.languageChanged', {
+        this.translateService.setUserLanguage(user.id, selected.code);
+
+        const successMessage = this.translateService.translate(user.id, 'settings.languageChanged', {
             language: selected.label,
         });
 
@@ -680,10 +682,10 @@ export class TelegramService implements OnModuleInit {
         await this.userService.updateUserSettings(userId, { reminder: newReminder });
 
         const statusText = newReminder
-            ? await this.translateService.translate(userId, 'settings.enabled')
-            : await this.translateService.translate(userId, 'settings.disabled');
+            ? this.translateService.translate(userId, 'settings.enabled')
+            : this.translateService.translate(userId, 'settings.disabled');
 
-        const remainderTranslate = await this.translateService.translate(userId, UserSettingsButtons.REMINDER);
+        const remainderTranslate = this.translateService.translate(userId, UserSettingsButtons.REMINDER);
         await this.safeSendMessage(chatId, `${remainderTranslate} ${statusText}`);
 
         this.userState.set(chatId, 'MainMenu');
@@ -697,10 +699,10 @@ export class TelegramService implements OnModuleInit {
         await this.userService.updateUserSettings(userId, { focusAlerts: newFocusAlerts });
 
         const statusText = newFocusAlerts
-            ? await this.translateService.translate(userId, 'settings.enabled')
-            : await this.translateService.translate(userId, 'settings.disabled');
+            ? this.translateService.translate(userId, 'settings.enabled')
+            : this.translateService.translate(userId, 'settings.disabled');
 
-        const focusAlertTranslate = await this.translateService.translate(userId, UserSettingsButtons.FOCUS_ALERTS);
+        const focusAlertTranslate = this.translateService.translate(userId, UserSettingsButtons.FOCUS_ALERTS);
         await this.safeSendMessage(chatId, `${focusAlertTranslate} ${statusText}`);
 
         this.userState.set(chatId, 'MainMenu');
@@ -715,7 +717,7 @@ export class TelegramService implements OnModuleInit {
 
             const chatId = Number(user.telegramId);
 
-            const message = await this.translateService.translate(user.id, "reminders.morning");
+            const message = this.translateService.translate(user.id, "reminders.morning");
             await this.safeSendMessage(chatId, message);
         });
 
@@ -733,7 +735,7 @@ export class TelegramService implements OnModuleInit {
 
             await this.sendReport(chatId, user.id, true);
 
-            const message = await this.translateService.translate(user.id, "reminders.dailyFollowUp");
+            const message = this.translateService.translate(user.id, "reminders.dailyFollowUp");
 
             await this.safeSendMessage(chatId, message);
         });
@@ -751,7 +753,7 @@ export class TelegramService implements OnModuleInit {
         };
 
         for (const user of users) {
-            const message = await this.translateService.translate(user.id, messageKeyMap[block.type]);
+            const message = this.translateService.translate(user.id, messageKeyMap[block.type]);
 
             await this.safeSendMessage(Number(user.telegramId), message);
         }
@@ -781,7 +783,7 @@ export class TelegramService implements OnModuleInit {
         const closedSessions = await this.userService.forceCloseAllActiveSessions();
 
         for (const session of closedSessions) {
-            const message = await this.translateService.translate(
+            const message = this.translateService.translate(
                 Number(session.telegramId),
                 'notifications.autoClosed',
                 { taskName: session.taskName }
@@ -801,8 +803,8 @@ export class TelegramService implements OnModuleInit {
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
 
-        const hoursLabel = await this.translateService.translate(userId, 'time.hours');
-        const minutesLabel = await this.translateService.translate(userId, 'time.minutes');
+        const hoursLabel = this.translateService.translate(userId, 'time.hours');
+        const minutesLabel = this.translateService.translate(userId, 'time.minutes');
 
         if (hours && minutes) {
             return `${hours} ${hoursLabel} ${minutes} ${minutesLabel}`;

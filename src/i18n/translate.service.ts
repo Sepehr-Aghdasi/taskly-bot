@@ -1,34 +1,29 @@
 import { Injectable } from '@nestjs/common';
-import { UserService } from 'src/user/user.service';
 import { en } from './en';
 import { fa } from './fa';
 
 @Injectable()
 export class TranslateService {
 
-    constructor(private readonly userService: UserService) { }
+    // Cache user language
+    private userLanguages = new Map<number, Language>();
 
-    async translate(userId: number, key: string, params?: Record<string, string | number>): Promise<string> {
-        const lang = await this.resolveLanguage(userId);
+    constructor() { }
 
+    translate(userId: number, key: string, params?: Record<string, string | number>): string {
+        const lang = this.userLanguages.get(userId) || 'en';
         const value = this.getNestedValue(translations[lang], key);
-
-        if (!value) {
-            return key;
-        }
+        if (!value) return key;
 
         return this.interpolate(value, params);
     }
 
-    getSupportedLanguages() {
-        return supportedLanguages;
+    setUserLanguage(userId: number, lang: Language) {
+        this.userLanguages.set(userId, lang);
     }
 
-    private async resolveLanguage(userId: number | null): Promise<Language> {
-        if (!userId) return 'fa';
-
-        const settings = await this.userService.getUserSettings(userId);
-        return (settings as any)?.language ?? 'fa'; // TODO
+    getSupportedLanguages() {
+        return structuredClone(supportedLanguages);
     }
 
     private getNestedValue(obj: any, path: string): string | null {
@@ -37,7 +32,6 @@ export class TranslateService {
 
     private interpolate(text: string, params?: Record<string, string | number>): string {
         if (!params) return text;
-
         return text.replace(/{{(\w+)}}/g, (_, key) =>
             params[key] !== undefined ? String(params[key]) : `{{${key}}}`
         );
@@ -45,7 +39,7 @@ export class TranslateService {
 
 }
 
-const supportedLanguages = [
+const supportedLanguages: { code: Language; label: string; emoji: string; }[] = [
     { code: 'fa', label: '🇮🇷 فارسی', emoji: '🇮🇷' },
     { code: 'en', label: '🇬🇧 English', emoji: '🇬🇧' },
 ];
