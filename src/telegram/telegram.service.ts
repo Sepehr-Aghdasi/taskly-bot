@@ -148,12 +148,19 @@ export class TelegramService implements OnModuleInit {
                 case 'SettingsMenu':
                     const reminderButton = await this.translateService.translate(user.id, UserSettingsButtons.REMINDER);
                     const focusAlertButton = await this.translateService.translate(user.id, UserSettingsButtons.FOCUS_ALERTS);
+                    const languageButton = await this.translateService.translate(user.id, UserSettingsButtons.LANGUAGE);
 
                     if (text.startsWith(reminderButton)) {
                         this.toggleReminder(user.id, chatId);
                     } else if (text.startsWith(focusAlertButton)) {
                         this.toggleFocusAlerts(user.id, chatId);
+                    } else if (text.startsWith(languageButton)) {
+                        this.showLanguageMenu(user.id, chatId);
                     }
+                    break;
+
+                case 'SelectingLanguage':
+                    this.handleLanguageSelection(chatId, text, user);
                     break;
 
                 default:
@@ -591,13 +598,19 @@ export class TelegramService implements OnModuleInit {
         const reminderStatus = userSettings?.reminder ? "✅" : "❌";
         const focusAlertsStatus = userSettings?.focusAlerts ? "✅" : "❌";
 
+        const supportedLanguages = this.translateService.getSupportedLanguages();
+        const currentLang = supportedLanguages.find(l => l.code === userSettings?.language);
+        const languageStatus = currentLang ? `(${currentLang.emoji})` : "";
+
         const remainderTranslate = await this.translateService.translate(userId, UserSettingsButtons.REMINDER);
         const focusAlertsTranslate = await this.translateService.translate(userId, UserSettingsButtons.FOCUS_ALERTS);
+        const languageTranslate = await this.translateService.translate(userId, UserSettingsButtons.LANGUAGE);
         const backButton = await this.translateService.translate(userId, BotButtons.BACK);
 
         const settingsKeyboard = [
             [{ text: `${remainderTranslate} (${reminderStatus})` }],
             [{ text: `${focusAlertsTranslate} (${focusAlertsStatus})` }],
+            [{ text: `${languageTranslate} ${languageStatus}` }],
             [{ text: backButton }]
         ];
 
@@ -611,6 +624,53 @@ export class TelegramService implements OnModuleInit {
                 one_time_keyboard: true,
             },
         });
+    }
+
+    private async showLanguageMenu(userId: number, chatId: number) {
+        const title = await this.translateService.translate(userId, 'settings.title');
+
+        this.userState.set(chatId, 'SelectingLanguage');
+
+        const supportedLanguages = this.translateService.getSupportedLanguages();
+        const languages = supportedLanguages.map(lang => ({ text: lang.label, code: lang.code }));
+        const backButton = await this.translateService.translate(userId, BotButtons.BACK);
+
+        const keyboard = {
+            keyboard: languages.map(lang => [{ text: lang.text }]).concat([[{ text: backButton }]]),
+            resize_keyboard: true,
+            one_time_keyboard: true,
+        };
+
+        return this.safeSendMessage(chatId, title, { reply_markup: keyboard });
+    }
+
+    private async handleLanguageSelection(chatId: number, text: string, user: User) {
+        const backButton = await this.translateService.translate(user.id, BotButtons.BACK);
+
+        if (text === backButton) {
+            this.userState.set(chatId, 'SettingsMenu');
+            await this.showSettingsMenu(chatId, user.id);
+            return;
+        }
+
+        const supportedLanguages = this.translateService.getSupportedLanguages();
+        const selected = supportedLanguages.find(lang => lang.label === text);
+        if (!selected) return;
+
+        const settings = await this.userService.getUserSettings(user.id);
+        settings.language = selected.code;
+
+        await this.userService.updateUserSettings(user.id, settings);
+
+        this.userState.set(chatId, 'SettingsMenu');
+
+        const successMessage = await this.translateService.translate(user.id, 'settings.languageChanged', {
+            language: selected.label,
+        });
+
+        await this.safeSendMessage(chatId, successMessage, { reply_markup: { remove_keyboard: true } });
+
+        await this.showSettingsMenu(chatId, user.id);
     }
 
     private async toggleReminder(userId: number, chatId: number) {

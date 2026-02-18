@@ -20,7 +20,8 @@ export enum BotButtons {
 
 export enum UserSettingsButtons {
     REMINDER = "buttons.REMINDER",
-    FOCUS_ALERTS = "buttons.FOCUS_ALERTS", // TODO
+    FOCUS_ALERTS = "buttons.FOCUS_ALERTS",
+    LANGUAGE = "buttons.LANGUAGE",
 
     BACK = "buttons.BACK"
 }

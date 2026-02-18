@@ -15,7 +15,8 @@ export const fa = {
         START_NEW_TASK_AFTER_ENDING_ACTIVE: "🔄 پایان تسک قبلی و شروع تسک جدید",
 
         REMINDER: "🔔 یادآوری",
-        FOCUS_ALERTS: "⏰ هشدار فوکوس"
+        FOCUS_ALERTS: "⏰ هشدار فوکوس",
+        LANGUAGE: "🌐 زبان"
     },
 
     menu: {
@@ -54,6 +55,7 @@ export const fa = {
         title: "⚙️ تنظیمات شما:",
         enabled: "✅ روشن شد",
         disabled: "❌ خاموش شد",
+        languageChanged: "🌐 زبان شما به {{language}} تغییر کرد!"
     },
 
     cancel: {

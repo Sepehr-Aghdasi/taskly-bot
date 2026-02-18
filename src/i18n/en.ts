@@ -15,7 +15,8 @@ export const en = {
         START_NEW_TASK_AFTER_ENDING_ACTIVE: "🔄 End Previous Task & Start New",
 
         REMINDER: "🔔 Reminder",
-        FOCUS_ALERTS: "⏰ Focus Alerts"
+        FOCUS_ALERTS: "⏰ Focus Alerts",
+        LANGUAGE: "🌐 Language"
     },
 
     menu: {
@@ -51,9 +52,10 @@ export const en = {
     },
 
     settings: {
-        title: "⚙️ Your settings:",
+        title: "⚙️ Your Settings:",
         enabled: "✅ Enabled",
         disabled: "❌ Disabled",
+        languageChanged: "🌐 Your language has been changed to {{language}}!"
     },
 
     cancel: {

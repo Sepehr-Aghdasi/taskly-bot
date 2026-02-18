@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { UserService } from 'src/user/user.service';
-import { translations, Language } from './index';
+import { en } from './en';
+import { fa } from './fa';
 
 @Injectable()
 export class TranslateService {
@@ -17,6 +18,10 @@ export class TranslateService {
         }
 
         return this.interpolate(value, params);
+    }
+
+    getSupportedLanguages() {
+        return supportedLanguages;
     }
 
     private async resolveLanguage(userId: number | null): Promise<Language> {
@@ -39,3 +44,15 @@ export class TranslateService {
     }
 
 }
+
+const supportedLanguages = [
+    { code: 'fa', label: '🇮🇷 فارسی', emoji: '🇮🇷' },
+    { code: 'en', label: '🇬🇧 English', emoji: '🇬🇧' },
+];
+
+const translations = {
+    en,
+    fa,
+};
+
+type Language = keyof typeof translations;
