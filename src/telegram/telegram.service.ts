@@ -180,7 +180,6 @@ export class TelegramService implements OnModuleInit {
     private async isNavigationCommand(text: string, userId: number) {
         const backButton = await this.translateService.translate(userId, BotButtons.BACK);
         const cancelButton = await this.translateService.translate(userId, BotButtons.CANCEL);
-        console.log("text", text);
 
         return text === backButton || text === cancelButton;
     }
@@ -249,7 +248,8 @@ export class TelegramService implements OnModuleInit {
             const chatId = query.message?.chat.id;
             if (!chatId) return;
 
-            const user = await this.userService.findByTelegramId(query.message.from.id.toString());
+            const telegramId = query.from.id.toString();
+            const user = await this.userService.findByTelegramId(telegramId);
             const cancelButton = await this.translateService.translate(user.id, BotButtons.CANCEL);
 
             if (query.data === cancelButton) {
@@ -304,7 +304,8 @@ export class TelegramService implements OnModuleInit {
         }
 
         const keyboard = tasks.map(task => [{ text: task.name }]);
-        keyboard.push([{ text: BotButtons.BACK }]);
+        const backButton = await this.translateService.translate(userId, BotButtons.BACK);
+        keyboard.push([{ text: backButton }]);
 
         this.userState.set(chatId, 'SelectingTask');
         const message = await this.translateService.translate(userId, 'menu.selectTask');
@@ -455,8 +456,9 @@ export class TelegramService implements OnModuleInit {
         await this.safeSendMessage(chatId, message, { reply_markup: { remove_keyboard: true } });
 
         const cancelTranslate = await this.translateService.translate(userId, "cancel.hint");
+        const cancelButton = await this.translateService.translate(userId, BotButtons.CANCEL);
         const cancelMsg = await this.safeSendMessage(chatId, cancelTranslate, {
-            reply_markup: { inline_keyboard: [[{ text: BotButtons.CANCEL, callback_data: BotButtons.CANCEL }]] }
+            reply_markup: { inline_keyboard: [[{ text: cancelButton, callback_data: cancelButton }]] }
         });
 
         this.cancelMessageIds.set(chatId, cancelMsg.message_id);
@@ -496,59 +498,53 @@ export class TelegramService implements OnModuleInit {
         const tasks = await this.userService.getTodayReport(userId);
 
         if (!tasks.length) {
-            const message = await this.translateService.translate(
-                userId,
-                'menu.noTaskToday'
-            );
+            const message = await this.translateService.translate(userId, 'menu.noTaskToday');
             return this.safeSendMessage(chatId, message);
         }
 
         const now = this.timeService.nowUTC();
+
         let totalDayMinutes = 0;
 
-        let reportText = await this.translateService.translate(
-            userId,
-            isAutomate ? 'report.autoTitle' : 'report.title'
-        );
+        let reportText = isAutomate
+            ? await this.translateService.translate(userId, 'report.autoTitle')
+            : await this.translateService.translate(userId, 'report.title');
 
-        for (const task of tasks) {
+        const activeTask = tasks.find(t => t.sessions.some(s => !s.endTime));
+        const inactiveTasks = tasks.filter(t => t !== activeTask);
+
+        // inactive tasks
+        for (const task of inactiveTasks) {
             const { text, minutes } = await this.buildTaskReport(userId, task, now);
             reportText += text;
             totalDayMinutes += minutes;
         }
 
-        const totalText = await this.translateService.translate(
-            userId,
-            'report.totalToday',
-            { time: await this.formatMinutes(userId, totalDayMinutes) }
-        );
+        // active task at the end
+        if (activeTask) {
+            const { text, minutes } = await this.buildTaskReport(userId, activeTask, now);
+            reportText += text;
+            totalDayMinutes += minutes;
+        }
 
         reportText += `\n━━━━━━━━━━━━━━\n`;
-        reportText += `${totalText}\n`;
+        reportText += await this.translateService.translate(userId, 'report.total', {
+            time: await this.formatMinutes(userId, totalDayMinutes),
+        }) + '\n';
 
         return this.safeSendMessage(chatId, reportText);
     }
 
-
     private async buildTaskReport(userId: number, task: TaskWithSessions, now: Date) {
         let taskMinutes = 0;
 
-        const taskTitle = await this.translateService.translate(
-            userId,
-            'report.taskTitle',
-            { name: task.name }
-        );
-
-        let text = `\n${taskTitle}`;
+        let text = `\n📌 ${task.name}`;
 
         const activeSession = task.sessions.find(s => !s.endTime);
         const isActive = !!activeSession;
 
         if (isActive) {
-            const inProgress = await this.translateService.translate(
-                userId,
-                'report.inProgress'
-            );
+            const inProgress = await this.translateService.translate(userId, 'task.inProgress');
             text += ` ${inProgress}`;
         }
 
@@ -568,23 +564,23 @@ export class TelegramService implements OnModuleInit {
                 sessionDuration = this.timeService.diffMinutes(session.startTime, now);
             }
 
-            const fromTo = await this.translateService.translate(
-                userId,
-                'report.fromTo',
-                { start, end }
-            );
+            text +=
+                '   ' +
+                await this.translateService.translate(userId, 'time.fromTo', {
+                    start,
+                    end,
+                }) +
+                '\n';
 
-            text += `   ${fromTo}\n`;
             taskMinutes += sessionDuration;
         }
 
-        const total = await this.translateService.translate(
-            userId,
-            'report.taskTotal',
-            { time: await this.formatMinutes(userId, taskMinutes) }
-        );
-
-        text += `   ${total}\n`;
+        text +=
+            '   ' +
+            await this.translateService.translate(userId, 'report.totalLabel', {
+                time: await this.formatMinutes(userId, taskMinutes),
+            }) +
+            '\n';
 
         return { text, minutes: taskMinutes };
     }
@@ -741,31 +737,22 @@ export class TelegramService implements OnModuleInit {
         return hour >= 22 || hour < 8;
     }
 
-    private async formatMinutes(userId: number, totalMinutes: number): Promise<string> {
+    private async formatMinutes(userId: number, totalMinutes: number) {
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
 
+        const hoursLabel = await this.translateService.translate(userId, 'time.hours');
+        const minutesLabel = await this.translateService.translate(userId, 'time.minutes');
+
         if (hours && minutes) {
-            return this.translateService.translate(
-                userId,
-                'time.hourMinute',
-                { hours, minutes }
-            );
+            return `${hours} ${hoursLabel} ${minutes} ${minutesLabel}`;
         }
 
         if (hours) {
-            return this.translateService.translate(
-                userId,
-                'time.hour',
-                { hours }
-            );
+            return `${hours} ${hoursLabel}`;
         }
 
-        return this.translateService.translate(
-            userId,
-            'time.minute',
-            { minutes }
-        );
+        return `${minutes} ${minutesLabel}`;
     }
 
 }
