@@ -621,7 +621,7 @@ export class TelegramService implements OnModuleInit {
 
         const supportedLanguages = this.translateService.getSupportedLanguages();
         const currentLang = supportedLanguages.find(lang => lang.code === userSettings.language);
-        const languageStatus = currentLang.emoji;
+        const currentLanguageEmoji = currentLang.emoji;
 
         const remainderTranslate = this.translateService.translate(userId, UserSettingsButtons.REMINDER);
         const focusAlertsTranslate = this.translateService.translate(userId, UserSettingsButtons.FOCUS_ALERTS);
@@ -631,7 +631,7 @@ export class TelegramService implements OnModuleInit {
         const settingsKeyboard = [
             [{ text: `${remainderTranslate} (${reminderStatus})` }],
             [{ text: `${focusAlertsTranslate} (${focusAlertsStatus})` }],
-            [{ text: `${languageTranslate} ${languageStatus}` }],
+            [{ text: `${languageTranslate} (${currentLanguageEmoji})` }],
             [{ text: backButton }]
         ];
 
