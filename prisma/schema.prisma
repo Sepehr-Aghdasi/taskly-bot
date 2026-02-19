@@ -26,6 +26,7 @@ model UserSettings {
 
   reminder    Boolean @default(true)
   focusAlerts Boolean @default(false)
+  language    String  @default("en")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

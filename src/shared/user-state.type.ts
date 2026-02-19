@@ -5,4 +5,5 @@ export type UserState =
     | "ConfirmStartNewTaskAfterEndingActive"
     | "TaskActions"
     | "EditingTaskName"
-    | "SettingsMenu";
+    | "SettingsMenu"
+    | "SelectingLanguage";

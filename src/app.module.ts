@@ -8,6 +8,7 @@ import { TelegramService } from './telegram/telegram.service';
 import { TaskSchedulerService } from './task-scheduler/task-scheduler.service';
 import { TimeService } from './time-service/time.service';
 import { TimeBlockSchedulerService } from './time-block-scheduler/time-block-scheduler.service';
+import { TranslateService } from './i18n/translate.service';
 
 @Module({
   imports: [],
@@ -20,6 +21,7 @@ import { TimeBlockSchedulerService } from './time-block-scheduler/time-block-sch
     TaskSchedulerService,
     TimeService,
     TimeBlockSchedulerService,
+    TranslateService
   ],
 })
 export class AppModule { }
