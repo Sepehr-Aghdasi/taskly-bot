@@ -32,11 +32,12 @@ The bot is built with a **modular NestJS structure** and uses **config-driven sc
 - Add, edit, and delete tasks
 - Start and end task sessions
 - Prevent multiple active tasks at the same time
+- Friendly inline/clickable buttons for all interactions 
 
 ### ⏱ Time Tracking
 - Track working sessions per task
 - Automatically calculate duration
-- Force-close active sessions at the end of the day
+- Automatically force‑closes sessions at the end of the day
 
 ### 📊 Reports
 - Daily task report
@@ -50,8 +51,17 @@ The bot is built with a **modular NestJS structure** and uses **config-driven sc
 
 ### ⚙️ User Settings
 - Enable / disable reminders
-- Enable / disable focus time alerts
+- Enable / disable focus alerts
+- Set preferred language (Persian 🇮🇷 or English 🇬🇧)
+- Language changes reflected instantly thanks to internal caching
 - Designed for future extensibility
+
+### 🌐 Multilingual Support
+- Full Persian & English translations
+- Automatic loading + caching of user language
+- New default behavior:
+  - Existing users default to Persian
+  - New users default to English
 
 ---
 
