@@ -223,7 +223,7 @@ export class UserService {
         });
 
         const now = this.timeService.nowUTC();
-        const closedSessions: { telegramId: string; taskName: string }[] = [];
+        const closedSessions: { userId: number; telegramId: string; task: Task; }[] = [];
 
         for (const session of activeSessions) {
             const duration = Math.floor(
@@ -236,8 +236,9 @@ export class UserService {
             });
 
             closedSessions.push({
+                userId: session.task.userId,
                 telegramId: session.task.user.telegramId,
-                taskName: session.task.name,
+                task: session.task,
             });
         }
 

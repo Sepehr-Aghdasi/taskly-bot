@@ -825,16 +825,29 @@ export class TelegramService implements OnModuleInit {
         const closedSessions = await this.userService.forceCloseAllActiveSessions();
 
         for (const session of closedSessions) {
+            const userId = session.userId;
+            const chatId = Number(session.telegramId);
+
             const message = this.translateService.translate(
-                Number(session.telegramId),
+                userId,
                 'notifications.autoClosed',
-                { taskName: session.taskName }
+                { name: session.task.name }
             );
 
-            await this.safeSendMessage(Number(session.telegramId), message);
+            await this.safeSendMessage(chatId, message);
+
+            // If the user is currently in TaskActions state, update their menu
+            const currentState = this.userState.get(chatId);
+            console.log(currentState);
+            if (currentState === 'TaskActions') {
+                // Remove the selected task since it has been closed
+                this.selectedTask.delete(chatId);
+
+                // Show the updated task list so the user can choose another task
+                await this.sendTaskActionsMenu(chatId, session.task);
+            }
         }
     }
-
 
     private isOutsideWorkingHours(): boolean {
         const hour = this.timeService.getIranHour();
