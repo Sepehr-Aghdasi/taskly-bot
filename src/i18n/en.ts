@@ -72,7 +72,7 @@ export const en = {
     notifications: {
         focus: "Focus time! 💪",
         break: "Break time! 😌",
-        lunch: "Lunch time! 🍽️",
+        half: "Lunch time! 🍽️",
         autoClosed: "⏹️ Task «{{name}}» was automatically ended.",
         outsideHours: "⏰ Outside allowed working hours.",
     },
