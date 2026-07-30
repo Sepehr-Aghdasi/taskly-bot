@@ -332,7 +332,10 @@ export class TelegramService implements OnModuleInit {
         }
 
         const keyboard = tasks.map(task => [{ text: task.name }]);
+        const addTaskButton = this.translateService.translate(userId, BotButtons.ADD_TASK);
         const backButton = this.translateService.translate(userId, BotButtons.BACK);
+
+        keyboard.push([{ text: addTaskButton }]);
         keyboard.push([{ text: backButton }]);
 
         this.userState.set(chatId, 'SelectingTask');
@@ -341,6 +344,12 @@ export class TelegramService implements OnModuleInit {
     }
 
     private async handleSelectTask(chatId: number, text: string, user: User) {
+        const addTaskButton = this.translateService.translate(user.id, BotButtons.ADD_TASK);
+        if (text === addTaskButton) {
+            await this.promptAddTaskName(chatId, user.id);
+            return;
+        }
+
         const tasks = await this.userService.getTodayReport(user.id);
         const task = tasks.find(t => t.name === text);
         if (!task) return;
