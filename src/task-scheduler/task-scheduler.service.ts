@@ -21,8 +21,8 @@ export class TaskSchedulerService implements OnModuleInit {
             await this.telegramService.scheduleDailyReport();
         }, { timezone: this.timeService.IRAN_TZ });
 
-        // Morning reminder, every day except Thursday & Friday 9:30
-        cron.schedule('30 9 * * 0-3,6', async () => {
+        // Morning reminder, every day except Friday 9:30
+        cron.schedule('30 9 * * 0-4,6', async () => {
             await this.telegramService.scheduleMorningReminder();
         }, { timezone: this.timeService.IRAN_TZ });
 
