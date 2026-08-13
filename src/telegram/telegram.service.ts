@@ -836,18 +836,15 @@ export class TelegramService implements OnModuleInit {
                 { name: session.task.name }
             );
 
-            await this.safeSendMessage(chatId, message);
+            // The task this session pointed to is done for the day (Tasks are
+            // scoped per-day), so unconditionally drop the user out of any
+            // task-specific flow — regardless of what screen they were on —
+            // and refresh their keyboard to MainMenu.
+            this.selectedTask.delete(chatId);
+            this.userState.set(chatId, 'MainMenu');
+            await this.clearCancelInline(chatId); // in case they were mid add/edit
 
-            // If the user is currently in TaskActions state, update their menu
-            const currentState = this.userState.get(chatId);
-            console.log(currentState);
-            if (currentState === 'TaskActions') {
-                // Remove the selected task since it has been closed
-                this.selectedTask.delete(chatId);
-
-                // Show the updated task list so the user can choose another task
-                await this.sendTaskActionsMenu(chatId, session.task);
-            }
+            await this.sendMainMenu(chatId, userId, message);
         }
     }
 
