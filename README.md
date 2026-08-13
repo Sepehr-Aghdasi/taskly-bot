@@ -32,7 +32,8 @@ The bot is built with a **modular NestJS structure** and uses **config-driven sc
 - Add, edit, and delete tasks
 - Start and end task sessions
 - Prevent multiple active tasks at the same time
-- Friendly inline/clickable buttons for all interactions 
+- Friendly inline/clickable buttons for all interactions
+- Color-coded buttons (start = green, end/delete = red, primary actions = blue) for quick visual recognition
 
 ### ⏱ Time Tracking
 - Track working sessions per task
@@ -171,7 +172,6 @@ npm run start:prod
 
 ## 📎 Project Links
 
-- [LinkedIn Post about Taskly Bot]()
 - [Telegram Id](https://t.me/Taskly_Tracker_Bot)
 
 ---
