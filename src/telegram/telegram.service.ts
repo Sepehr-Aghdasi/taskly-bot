@@ -264,6 +264,10 @@ export class TelegramService implements OnModuleInit {
 
             const telegramId = query.from.id.toString();
             const user = await this.userService.findByTelegramId(telegramId);
+            if (!user) {
+                await this.bot.answerCallbackQuery(query.id);
+                return;
+            }
 
             // Ensure language is loaded
             await this.translateService.loadUserLanguage(user.id);
@@ -283,8 +287,36 @@ export class TelegramService implements OnModuleInit {
                 return;
             }
 
+            if (query.data === 'disable_focus_alerts') {
+                await this.handleDisableFocusAlerts(query, chatId, user);
+                return;
+            }
+
             await this.bot.answerCallbackQuery(query.id);
         });
+    }
+
+    private async handleDisableFocusAlerts(query: TelegramBot.CallbackQuery, chatId: number, user: User) {
+        await this.userService.updateUserSettings(user.id, { focusAlerts: false });
+
+        await this.bot.answerCallbackQuery(query.id);
+
+        if (query.message) {
+            await this.bot.editMessageReplyMarkup(
+                { inline_keyboard: [] },
+                { chat_id: chatId, message_id: query.message.message_id },
+            );
+        }
+
+        const focusAlertTranslate = this.translateService.translate(user.id, UserSettingsButtons.FOCUS_ALERTS);
+        const statusText = this.translateService.translate(user.id, 'settings.disabled');
+        await this.safeSendMessage(chatId, `${focusAlertTranslate} ${statusText}`);
+
+        // If they're currently looking at the settings menu, refresh it so the
+        // reply-keyboard reflects the new ❌ status instead of showing stale ✅
+        if (this.userState.get(chatId) === 'SettingsMenu') {
+            await this.showSettingsMenu(chatId, user.id);
+        }
     }
 
     private async handleAddTask(chatId: number, text: string, user: User) {
@@ -770,15 +802,22 @@ export class TelegramService implements OnModuleInit {
         const users = await this.userService.getAllUsersWithFocusAlertsEnabled();
 
         const messageKeyMap: Record<TimeBlockTypes, string> = {
-            Focus: 'notifications.focus',
-            Break: 'notifications.break',
-            Half: 'notifications.half',
+            Focus: "notifications.focus",
+            Break: "notifications.break",
+            Half: "notifications.half",
         };
 
         for (const user of users) {
             const message = this.translateService.translate(user.id, messageKeyMap[block.type]);
+            const disableLabel = this.translateService.translate(user.id, 'notifications.disableFocusAlerts');
 
-            await this.safeSendMessage(Number(user.telegramId), message);
+            await this.safeSendMessage(Number(user.telegramId), message, {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: disableLabel, callback_data: 'disable_focus_alerts' }],
+                    ],
+                },
+            });
         }
     }
 
