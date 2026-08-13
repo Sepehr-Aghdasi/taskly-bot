@@ -577,21 +577,21 @@ export class TelegramService implements OnModuleInit {
 
         // In-active task
         for (const task of inactiveTasks) {
-            const { text, minutes } = await this.buildTaskReport(userId, task, now);
+            const { text, minutes } = this.buildTaskReport(userId, task, now);
             reportText += text;
             totalDayMinutes += minutes;
         }
 
         // active task at the end
         if (activeTask) {
-            const { text, minutes } = await this.buildTaskReport(userId, activeTask, now);
+            const { text, minutes } = this.buildTaskReport(userId, activeTask, now);
             reportText += text;
             totalDayMinutes += minutes;
         }
 
         reportText += `\n━━━━━━━━━━━━━━\n`;
         reportText += this.translateService.translate(userId, 'report.total', {
-            time: await this.formatMinutes(userId, totalDayMinutes),
+            time: this.formatMinutes(userId, totalDayMinutes),
         }) + '\n';
 
         return this.safeSendMessage(chatId, reportText);
