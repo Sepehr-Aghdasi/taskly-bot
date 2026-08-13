@@ -75,6 +75,7 @@ export const en = {
         half: "Lunch time! 🍽️",
         autoClosed: "⏹️ Task «{{name}}» was automatically ended.",
         outsideHours: "⏰ Outside allowed working hours.",
+        disableFocusAlerts: "Disable focus alerts"
     },
 
     time: {
