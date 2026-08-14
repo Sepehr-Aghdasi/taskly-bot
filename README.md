@@ -51,14 +51,15 @@ The bot is built with a **modular NestJS structure** and uses **config-driven sc
 
 ### ⚙️ User Settings
 - Enable / disable reminders
-- Enable / disable focus alerts
-- Set preferred language (Persian 🇮🇷 or English 🇬🇧)
+- Enable / disable focus alerts, with in-chat confirmation and live settings menu refresh
+- Set preferred language (7 languages supported — see below)
 - Language changes reflected instantly thanks to internal caching
 - Designed for future extensibility
 
 ### 🌐 Multilingual Support
-- Full Persian & English translations
+- 7 supported languages: Persian 🇮🇷, English 🇬🇧, German 🇩🇪, Dutch 🇳🇱, French 🇫🇷, Spanish 🇪🇸, Italian 🇮🇹
 - Automatic loading + caching of user language
+- Language cache preloaded at startup, so scheduled notifications (reminders, focus alerts, force-close) are never sent in the wrong language
 - New default behavior:
   - Existing users default to Persian
   - New users default to English
