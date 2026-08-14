@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { en } from './en';
-import { fa } from './fa';
 import { UserService } from 'src/user/user.service';
+import { Language, translations } from './locales';
 
 @Injectable()
 export class TranslateService {
@@ -64,14 +63,12 @@ export class TranslateService {
 
 }
 
-const supportedLanguages: { code: Language; label: string; emoji: string; }[] = [
+const supportedLanguages: Readonly<{ code: Language; label: string; emoji: string }[]> = [
     { code: 'fa', label: '🇮🇷 فارسی', emoji: '🇮🇷' },
     { code: 'en', label: '🇬🇧 English', emoji: '🇬🇧' },
+    { code: 'de', label: '🇩🇪 Deutsch', emoji: '🇩🇪' },
+    { code: 'nl', label: '🇳🇱 Nederlands', emoji: '🇳🇱' },
+    { code: 'fr', label: '🇫🇷 Français', emoji: '🇫🇷' },
+    { code: 'es', label: '🇪🇸 Español', emoji: '🇪🇸' },
+    { code: 'it', label: '🇮🇹 Italiano', emoji: '🇮🇹' },
 ];
-
-const translations = {
-    en,
-    fa,
-};
-
-type Language = keyof typeof translations;
