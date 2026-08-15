@@ -1,15 +1,25 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { en } from './en';
 import { fa } from './fa';
 import { UserService } from 'src/user/user.service';
 
 @Injectable()
-export class TranslateService {
+export class TranslateService implements OnModuleInit {
 
     private userLanguages = new Map<number, string>(); // cache user languages
     private loadingLanguages = new Map<number, Promise<string>>(); // prevent race conditions
 
     constructor(private readonly userService: UserService) { }
+
+    async onModuleInit() {
+        const users = await this.userService.getAllUsers();
+
+        for (const user of users) {
+            if (user.userSettings?.language) {
+                this.userLanguages.set(user.id, user.userSettings.language);
+            }
+        }
+    }
 
     translate(userId: number, key: string, params?: Record<string, string | number>): string {
         const lang = this.userLanguages.get(userId) || 'en';

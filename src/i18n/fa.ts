@@ -75,6 +75,7 @@ export const fa = {
         half: "وقت ناهاره! 🍽️",
         autoClosed: "⏹️ تسک «{{name}}» به‌صورت خودکار پایان یافت.",
         outsideHours: "⏰ خارج از ساعات مجاز کاری هست.",
+        disableFocusAlerts: "غیرفعال کردن هشدارهای تمرکز"
     },
 
     time: {
