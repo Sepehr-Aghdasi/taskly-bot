@@ -1,11 +1,12 @@
 import { Task, User } from '@prisma/client';
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import TelegramBot, { KeyboardButton } from 'node-telegram-bot-api';
+import TelegramBot from 'node-telegram-bot-api';
 import { UserService } from 'src/user/user.service';
 import { UserState } from 'src/shared/user-state.type';
 import { TaskWithSessions } from 'src/shared/task.type';
 import { TimeService } from 'src/time-service/time.service';
 import { TranslateService } from 'src/i18n/translate.service';
+import { StyledKeyboardButton } from 'src/shared/button-style.type';
 import { BotButtons, UserSettingsButtons } from 'src/shared/bot-buttons.enum';
 import { TimeBlock, TimeBlockTypes } from 'src/shared/configs/time-blocks.type';
 
@@ -38,8 +39,8 @@ export class TelegramService implements OnModuleInit {
         const todayReportButton = this.translateService.translate(userId, BotButtons.TODAY_REPORT);
         const settingsButton = this.translateService.translate(userId, BotButtons.SETTINGS);
 
-        const keyboard: KeyboardButton[][] = [
-            [{ text: addTaskButton }],
+        const keyboard: StyledKeyboardButton[][] = [
+            [{ text: addTaskButton, style: "primary" }],
             [{ text: taskListButton }],
             [{ text: todayReportButton }],
             [{ text: settingsButton }],
@@ -59,16 +60,16 @@ export class TelegramService implements OnModuleInit {
         const editTaskButton = this.translateService.translate(task.userId, BotButtons.EDIT_TASK);
         const backButton = this.translateService.translate(task.userId, BotButtons.BACK);
 
-        let keyboard: KeyboardButton[][] = [];
+        let keyboard: StyledKeyboardButton[][] = [];
 
         if (activeSession && activeSession.taskId === task.id) {
-            keyboard.push([{ text: endSelectedTaskButton }]);
+            keyboard.push([{ text: endSelectedTaskButton, style: "danger" }]);
         } else {
-            keyboard.push([{ text: startSelectedTaskButton }]);
+            keyboard.push([{ text: startSelectedTaskButton, style: "success" }]);
         }
 
         keyboard.push(
-            [{ text: deleteSelectedTaskButton }],
+            [{ text: deleteSelectedTaskButton, style: "danger" }],
             [{ text: editTaskButton }],
             [{ text: backButton }]
         );
@@ -335,8 +336,8 @@ export class TelegramService implements OnModuleInit {
 
         const startSelectedTaskButton = this.translateService.translate(user.id, BotButtons.START_SELECTED_TASK);
         const backButton = this.translateService.translate(user.id, BotButtons.BACK);
-        const keyboard = [
-            [{ text: startSelectedTaskButton }],
+        const keyboard: StyledKeyboardButton[][] = [
+            [{ text: startSelectedTaskButton, style: "success" }],
             [{ text: backButton }]
         ];
 
@@ -356,11 +357,11 @@ export class TelegramService implements OnModuleInit {
             return;
         }
 
-        const keyboard = tasks.map(task => [{ text: task.name }]);
+        const keyboard: StyledKeyboardButton[][] = tasks.map(task => [{ text: task.name }]);
         const addTaskButton = this.translateService.translate(userId, BotButtons.ADD_TASK);
         const backButton = this.translateService.translate(userId, BotButtons.BACK);
 
-        keyboard.push([{ text: addTaskButton }]);
+        keyboard.push([{ text: addTaskButton, style: "primary" }]);
         keyboard.push([{ text: backButton }]);
 
         this.userState.set(chatId, 'SelectingTask');
@@ -402,8 +403,8 @@ export class TelegramService implements OnModuleInit {
                     const startNewTaskAfterEndingActiveButton = this.translateService.translate(user.id, BotButtons.START_NEW_TASK_AFTER_ENDING_ACTIVE);
                     const cancelButton = this.translateService.translate(user.id, BotButtons.CANCEL);
 
-                    const keyboard: KeyboardButton[][] = [
-                        [{ text: startNewTaskAfterEndingActiveButton }],
+                    const keyboard: StyledKeyboardButton[][] = [
+                        [{ text: startNewTaskAfterEndingActiveButton, style: "primary" }],
                         [{ text: cancelButton }],
                     ];
 
